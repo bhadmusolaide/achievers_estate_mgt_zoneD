@@ -52,7 +52,12 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
               console.error('Error fetching profile after auth change:', error);
               setProfileError('Failed to load user profile. Please log in again.');
+            } finally {
+              // Always set loading to false after sign-in completes
+              setLoading(false);
             }
+          } else {
+            setLoading(false);
           }
         }
       }
