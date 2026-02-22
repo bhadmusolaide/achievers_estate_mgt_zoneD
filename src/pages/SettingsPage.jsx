@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, User, Bell, Shield, Mail, MessageSquare, Loader2, CheckCircle, AlertCircle, Send, Info, Users, Tag, CheckSquare } from 'lucide-react';
+import { Save, User, Bell, Shield, Mail, MessageSquare, Loader2, CheckCircle, AlertCircle, Send, Info, Users, Tag, CheckSquare, AlertTriangle } from 'lucide-react';
 import Header from '../components/layout/Header';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,7 @@ import { notificationPreferencesService, DEFAULT_PREFERENCES } from '../services
 import UserManagement from '../components/settings/UserManagement';
 import TransactionCategoriesManager from '../components/settings/TransactionCategoriesManager';
 import ApprovalSettingsManager from '../components/settings/ApprovalSettingsManager';
+import DataWipeManager from '../components/settings/DataWipeManager';
 
 const SettingsPage = () => {
   const { adminProfile } = useAuth();
@@ -178,6 +179,7 @@ const SettingsPage = () => {
       { id: 'users', label: 'User Management', icon: Users },
       { id: 'categories', label: 'Transaction Categories', icon: Tag },
       { id: 'approvals', label: 'Approval Settings', icon: CheckSquare },
+      { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
     ] : []),
   ];
 
@@ -565,6 +567,12 @@ const SettingsPage = () => {
             {activeTab === 'approvals' && isChairman && (
               <div className="settings-section">
                 <ApprovalSettingsManager />
+              </div>
+            )}
+
+            {activeTab === 'danger' && isChairman && (
+              <div className="settings-section">
+                <DataWipeManager />
               </div>
             )}
           </div>
