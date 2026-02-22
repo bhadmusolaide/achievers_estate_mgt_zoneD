@@ -74,7 +74,7 @@ export const dashboardService = {
       .from('payments')
       .select(`
         *,
-        landlords (full_name),
+        landlords (full_name, house_address, road),
         payment_types (name)
       `)
       .order('created_at', { ascending: false })

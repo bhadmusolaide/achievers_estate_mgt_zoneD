@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Save, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 const ApprovalSettingsManager = () => {
   const { adminProfile } = useAuth();
+  const { success, error: toastError } = useToast();
   const [settings, setSettings] = useState({
     threshold: 50000,
     roles: ['chairman', 'treasurer'],
@@ -12,7 +14,6 @@ const ApprovalSettingsManager = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState({ type: '', text: '' });
 
   // Available roles for selection
   const availableRoles = [
@@ -32,7 +33,7 @@ const ApprovalSettingsManager = () => {
       setSettings(data);
     } catch (error) {
       console.error('Error loading approval settings:', error);
-      setMessage({ type: 'error', text: 'Failed to load settings' });
+      toastError('Failed to load settings');
     } finally {
       setLoading(false);
     }
@@ -75,18 +76,16 @@ const ApprovalSettingsManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage({ type: '', text: '' });
 
     if (!validate()) return;
 
     setSaving(true);
     try {
       await settingsService.updateApprovalSettings(settings.threshold, settings.roles);
-      setMessage({ type: 'success', text: 'Approval settings updated successfully' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      success('Approval settings updated successfully');
     } catch (error) {
       console.error('Error saving approval settings:', error);
-      setMessage({ type: 'error', text: 'Failed to save settings: ' + error.message });
+      toastError('Failed to save settings: ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -113,12 +112,7 @@ const ApprovalSettingsManager = () => {
         </div>
       </div>
 
-      {message.text && (
-        <div className={`${message.type}-message`} style={{ marginBottom: '1rem' }}>
-          {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-          <span>{message.text}</span>
-        </div>
-      )}
+
 
       <form onSubmit={handleSubmit} className="approval-settings-form">
         <div className="form-card">

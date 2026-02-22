@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { generateReferenceCode } from '../utils/helpers';
 import { activityLogService, ACTION_TYPES, ENTITY_TYPES } from './activityLogService';
 import { transactionService } from './transactionService';
+import toastService from './toastService';
 
 export const financialOverviewService = {
   /**
@@ -279,171 +280,180 @@ export const financialOverviewService = {
    * Create payments for outstanding amounts for current period
    */
   async createOutstandingPayments(landlordId, adminId) {
-    // Get current date for period
-    const now = new Date();
-    const paymentMonth = now.getMonth() + 1; // JS months are 0-based
-    const paymentYear = now.getFullYear();
-
-    // Get landlord's assigned payment types with frequency
-    const { data: assignments, error: assignError } = await supabase
-      .from('landlord_payment_types')
-      .select(`
-        payment_type_id,
-        amount,
-        payment_types (id, name, frequency)
-      `)
-      .eq('landlord_id', landlordId)
-      .eq('active', true);
-
-    if (assignError) throw assignError;
-
-    // Get existing confirmed payments for this period
-    const { data: existingPayments, error: payError } = await supabase
-      .from('payments')
-      .select('payment_type_id, amount')
-      .eq('landlord_id', landlordId)
-      .eq('payment_month', paymentMonth)
-      .eq('payment_year', paymentYear)
-      .eq('status', 'confirmed');
-
-    if (payError) throw payError;
-
-    // Calculate outstanding amounts per payment type, considering frequency
-    const paymentsMap = {};
-    existingPayments.forEach(p => {
-      paymentsMap[p.payment_type_id] = (paymentsMap[p.payment_type_id] || 0) + parseFloat(p.amount);
-    });
-
-    const paymentsToCreate = [];
-
-    for (const assignment of assignments) {
-      const frequency = assignment.payment_types?.frequency || 'monthly';
-      const expected = parseFloat(assignment.amount);
-
-      // Check if this payment type should be expected for current period
-      let shouldCreatePayment = false;
-
-      switch (frequency) {
-        case 'monthly':
-          // Monthly payments are always expected
-          shouldCreatePayment = true;
-          break;
-
-        case 'yearly':
-          // Yearly payments only in January
-          shouldCreatePayment = paymentMonth === 1;
-          break;
-
-        case 'one-time':
-          // One-time payments only if never paid before
-          const hasEverPaid = await supabase
-            .from('payments')
-            .select('id')
-            .eq('landlord_id', landlordId)
-            .eq('payment_type_id', assignment.payment_type_id)
-            .eq('status', 'confirmed')
-            .limit(1);
-
-          shouldCreatePayment = hasEverPaid.data?.length === 0;
-          break;
-      }
-
-      if (shouldCreatePayment) {
-        const paid = paymentsMap[assignment.payment_type_id] || 0;
-        const outstanding = expected - paid;
-
-        if (outstanding > 0) {
-          paymentsToCreate.push({
-            landlord_id: landlordId,
-            payment_type_id: assignment.payment_type_id,
-            amount: outstanding,
-            payment_method: 'cash', // Default
-            payment_month: paymentMonth,
-            payment_year: paymentYear,
-            payment_type_name: assignment.payment_types?.name || 'PAY',
-          });
-        }
-      }
-    }
-
-    if (paymentsToCreate.length === 0) {
-      throw new Error('No outstanding payments found for current period');
-    }
-
-    // Create payments
-    const { data, error } = await supabase
-      .from('payments')
-      .insert(paymentsToCreate.map(payment => ({
-        landlord_id: payment.landlord_id,
-        payment_type_id: payment.payment_type_id,
-        amount: payment.amount,
-        payment_method: payment.payment_method,
-        payment_month: payment.payment_month,
-        payment_year: payment.payment_year,
-        reference_code: generateReferenceCode(
-          landlordId,
-          payment.payment_year,
-          payment.payment_month,
-          payment.payment_type_name
-        ),
-        logged_by: adminId,
-        status: 'confirmed',
-        confirmed_at: new Date().toISOString(),
-      })))
-      .select();
-
-    if (error) throw error;
-
-    // Create corresponding credit transactions for each payment
     try {
-      // Get rent_income category
-      const categories = await transactionService.getCategories('credit');
-      const rentIncomeCategory = categories.find(c => c.name === 'rent_income');
-      
-      if (rentIncomeCategory && adminId) {
-        for (const payment of data) {
-          const paymentType = paymentsToCreate.find(p => p.payment_type_id === payment.payment_type_id);
-          
-          const transaction = await transactionService.create({
-            transaction_type: 'credit',
-            category_id: rentIncomeCategory.id,
-            amount: parseFloat(payment.amount),
-            description: `Payment from Landlord ID ${payment.landlord_id} - ${paymentType?.payment_type_name || 'Payment'}`,
-            reference: payment.reference_code,
-            landlord_id: payment.landlord_id,
-            payment_id: payment.id,
-          }, adminId);
+      // Get current date for period
+      const now = new Date();
+      const paymentMonth = now.getMonth() + 1; // JS months are 0-based
+      const paymentYear = now.getFullYear();
 
-          // Auto-approve the transaction
-          if (transaction.status === 'pending') {
-            await transactionService.approve(transaction.id, adminId);
+      // Get landlord's assigned payment types with frequency
+      const { data: assignments, error: assignError } = await supabase
+        .from('landlord_payment_types')
+        .select(`
+          payment_type_id,
+          amount,
+          payment_types (id, name, frequency)
+        `)
+        .eq('landlord_id', landlordId)
+        .eq('active', true);
+
+      if (assignError) throw assignError;
+
+      // Get existing confirmed payments for this period
+      const { data: existingPayments, error: payError } = await supabase
+        .from('payments')
+        .select('payment_type_id, amount')
+        .eq('landlord_id', landlordId)
+        .eq('payment_month', paymentMonth)
+        .eq('payment_year', paymentYear)
+        .eq('status', 'confirmed');
+
+      if (payError) throw payError;
+
+      // Calculate outstanding amounts per payment type, considering frequency
+      const paymentsMap = {};
+      existingPayments.forEach(p => {
+        paymentsMap[p.payment_type_id] = (paymentsMap[p.payment_type_id] || 0) + parseFloat(p.amount);
+      });
+
+      const paymentsToCreate = [];
+
+      for (const assignment of assignments) {
+        const frequency = assignment.payment_types?.frequency || 'monthly';
+        const expected = parseFloat(assignment.amount);
+
+        // Check if this payment type should be expected for current period
+        let shouldCreatePayment = false;
+
+        switch (frequency) {
+          case 'monthly':
+            // Monthly payments are always expected
+            shouldCreatePayment = true;
+            break;
+
+          case 'yearly':
+            // Yearly payments only in January
+            shouldCreatePayment = paymentMonth === 1;
+            break;
+
+          case 'one-time':
+            // One-time payments only if never paid before
+            const hasEverPaid = await supabase
+              .from('payments')
+              .select('id')
+              .eq('landlord_id', landlordId)
+              .eq('payment_type_id', assignment.payment_type_id)
+              .eq('status', 'confirmed')
+              .limit(1);
+
+            shouldCreatePayment = hasEverPaid.data?.length === 0;
+            break;
+        }
+
+        if (shouldCreatePayment) {
+          const paid = paymentsMap[assignment.payment_type_id] || 0;
+          const outstanding = expected - paid;
+
+          if (outstanding > 0) {
+            paymentsToCreate.push({
+              landlord_id: landlordId,
+              payment_type_id: assignment.payment_type_id,
+              amount: outstanding,
+              payment_method: 'cash', // Default
+              payment_month: paymentMonth,
+              payment_year: paymentYear,
+              payment_type_name: assignment.payment_types?.name || 'PAY',
+            });
           }
         }
       }
-    } catch (transactionError) {
-      // Log error but don't fail the overall operation
-      console.error('Error creating transactions for payments:', transactionError);
-    }
 
-    // Log activities
-    for (const payment of data) {
-      const paymentType = paymentsToCreate.find(p => p.payment_type_id === payment.payment_type_id);
-      await activityLogService.log({
-        adminId,
-        actionType: ACTION_TYPES.PAYMENT_CONFIRMED,
-        entityType: ENTITY_TYPES.PAYMENT,
-        entityId: payment.id,
-        metadata: {
+      if (paymentsToCreate.length === 0) {
+        throw new Error('No outstanding payments found for current period');
+      }
+
+      // Create payments
+      const { data, error } = await supabase
+        .from('payments')
+        .insert(paymentsToCreate.map(payment => ({
+          landlord_id: payment.landlord_id,
+          payment_type_id: payment.payment_type_id,
           amount: payment.amount,
-          payment_type: paymentType?.payment_type_name || 'unknown',
-          year: payment.payment_year,
-          month: payment.payment_month,
-          landlord_id: landlordId,
-        },
-      });
-    }
+          payment_method: payment.payment_method,
+          payment_month: payment.payment_month,
+          payment_year: payment.payment_year,
+          reference_code: generateReferenceCode(
+            landlordId,
+            payment.payment_year,
+            payment.payment_month,
+            payment.payment_type_name
+          ),
+          logged_by: adminId,
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+        })))
+        .select();
 
-    return data;
+      if (error) throw error;
+
+      // Create corresponding credit transactions for each payment
+      try {
+        // Get rent_income category
+        const categories = await transactionService.getCategories('credit');
+        const rentIncomeCategory = categories.find(c => c.name === 'rent_income');
+        
+        if (rentIncomeCategory && adminId) {
+          for (const payment of data) {
+            const paymentType = paymentsToCreate.find(p => p.payment_type_id === payment.payment_type_id);
+            
+            const transaction = await transactionService.create({
+              transaction_type: 'credit',
+              category_id: rentIncomeCategory.id,
+              amount: parseFloat(payment.amount),
+              description: `Payment from Landlord ID ${payment.landlord_id} - ${paymentType?.payment_type_name || 'Payment'}`,
+              reference: payment.reference_code,
+              landlord_id: payment.landlord_id,
+              payment_id: payment.id,
+            }, adminId);
+
+            // Auto-approve the transaction
+            if (transaction.status === 'pending') {
+              await transactionService.approve(transaction.id, adminId);
+            }
+          }
+        }
+      } catch (transactionError) {
+        // Log error but don't fail the overall operation
+        console.error('Error creating transactions for payments:', transactionError);
+      }
+
+      // Log activities
+      for (const payment of data) {
+        const paymentType = paymentsToCreate.find(p => p.payment_type_id === payment.payment_type_id);
+        await activityLogService.log({
+          adminId,
+          actionType: ACTION_TYPES.PAYMENT_CONFIRMED,
+          entityType: ENTITY_TYPES.PAYMENT,
+          entityId: payment.id,
+          metadata: {
+            amount: payment.amount,
+            payment_type: paymentType?.payment_type_name || 'unknown',
+            year: payment.payment_year,
+            month: payment.payment_month,
+            landlord_id: landlordId,
+          },
+        });
+      }
+
+      // Show success toast
+      toastService.success(`Created ${data.length} outstanding payment(s) for current period`);
+
+      return data;
+    } catch (error) {
+      // Show error toast
+      toastService.error(`Failed to create outstanding payments: ${error.message}`);
+      throw error;
+    }
   },
 
   /**
@@ -451,45 +461,54 @@ export const financialOverviewService = {
    * Uses INSERT ... ON CONFLICT ... UPDATE for efficiency
    */
   async bulkAssign(landlordIds, paymentTypeId, amount, adminId, frequency = 'monthly', startMonth = null, startYear = null) {
-    const assignments = landlordIds.map(landlordId => ({
-      landlord_id: landlordId,
-      payment_type_id: paymentTypeId,
-      amount: amount,
-      frequency: frequency,
-      start_month: startMonth,
-      start_year: startYear,
-      active: true,
-      assigned_by: adminId,
-      assigned_at: new Date().toISOString()
-    }));
+    try {
+      const assignments = landlordIds.map(landlordId => ({
+        landlord_id: landlordId,
+        payment_type_id: paymentTypeId,
+        amount: amount,
+        frequency: frequency,
+        start_month: startMonth,
+        start_year: startYear,
+        active: true,
+        assigned_by: adminId,
+        assigned_at: new Date().toISOString()
+      }));
 
-    const { data, error } = await supabase
-      .from('landlord_payment_types')
-      .upsert(assignments, {
-        onConflict: 'landlord_id,payment_type_id',
-        ignoreDuplicates: false
-      })
-      .select();
+      const { data, error } = await supabase
+        .from('landlord_payment_types')
+        .upsert(assignments, {
+          onConflict: 'landlord_id,payment_type_id',
+          ignoreDuplicates: false
+        })
+        .select();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Log the activity
-    if (adminId) {
-      await activityLogService.log({
-        adminId,
-        actionType: ACTION_TYPES.PAYMENT_TYPE_ASSIGNED,
-        entityType: ENTITY_TYPES.LANDLORD,
-        entityId: null,
-        metadata: {
-          landlord_count: landlordIds.length,
-          payment_type_id: paymentTypeId,
-          amount: amount,
-          frequency: frequency
-        }
-      });
+      // Log the activity
+      if (adminId) {
+        await activityLogService.log({
+          adminId,
+          actionType: ACTION_TYPES.PAYMENT_TYPE_ASSIGNED,
+          entityType: ENTITY_TYPES.LANDLORD,
+          entityId: null,
+          metadata: {
+            landlord_count: landlordIds.length,
+            payment_type_id: paymentTypeId,
+            amount: amount,
+            frequency: frequency
+          }
+        });
+      }
+
+      // Show success toast
+      toastService.success(`Assigned payment type to ${landlordIds.length} landlord(s)`);
+
+      return data;
+    } catch (error) {
+      // Show error toast
+      toastService.error(`Failed to assign payment types: ${error.message}`);
+      throw error;
     }
-
-    return data;
   },
 
   /**
@@ -497,30 +516,39 @@ export const financialOverviewService = {
    * Sets active = false instead of deleting
    */
   async bulkUnassign(landlordIds, paymentTypeId, adminId) {
-    const { data, error } = await supabase
-      .from('landlord_payment_types')
-      .update({ active: false })
-      .in('landlord_id', landlordIds)
-      .eq('payment_type_id', paymentTypeId)
-      .select();
+    try {
+      const { data, error } = await supabase
+        .from('landlord_payment_types')
+        .update({ active: false })
+        .in('landlord_id', landlordIds)
+        .eq('payment_type_id', paymentTypeId)
+        .select();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Log the activity
-    if (adminId) {
-      await activityLogService.log({
-        adminId,
-        actionType: ACTION_TYPES.PAYMENT_TYPE_UNASSIGNED,
-        entityType: ENTITY_TYPES.LANDLORD,
-        entityId: null,
-        metadata: {
-          landlord_count: landlordIds.length,
-          payment_type_id: paymentTypeId
-        }
-      });
+      // Log the activity
+      if (adminId) {
+        await activityLogService.log({
+          adminId,
+          actionType: ACTION_TYPES.PAYMENT_TYPE_UNASSIGNED,
+          entityType: ENTITY_TYPES.LANDLORD,
+          entityId: null,
+          metadata: {
+            landlord_count: landlordIds.length,
+            payment_type_id: paymentTypeId
+          }
+        });
+      }
+
+      // Show success toast
+      toastService.success(`Unassigned payment type from ${landlordIds.length} landlord(s)`);
+
+      return data;
+    } catch (error) {
+      // Show error toast
+      toastService.error(`Failed to unassign payment types: ${error.message}`);
+      throw error;
     }
-
-    return data;
   },
 
   /**
