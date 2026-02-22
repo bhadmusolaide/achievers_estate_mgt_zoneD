@@ -29,56 +29,57 @@ const SearchFilter = ({
   return (
     <div className="search-filter">
       <div className="search-controls">
-        <div className="filter-group search-group">
-          <label className="search-label-spacer">Search</label>
-          <div className="search-bar">
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={handleSearch}
-              aria-label={searchPlaceholder}
-            />
-          </div>
-        </div>
-        
-        {filters.length > 0 && (
-          <div className="inline-filters">
-            {filters.map((filter) => (
-              <div key={filter.key} className="filter-group">
-                <label>{filter.label}</label>
-                {filter.type === 'text' ? (
-                  <input
-                    type="text"
-                    placeholder={filter.placeholder || ''}
-                    value={activeFilters[filter.key] || ''}
-                    onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                    className="filter-input"
-                  />
-                ) : (
-                  <select
-                    value={activeFilters[filter.key] || ''}
-                    onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                  >
-                    <option value="">All</option>
-                    {filter.options?.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
+        <div className="inline-filters">
+          {/* Search bar integrated into the filters container */}
+          {onSearch && (
+            <div className="filter-group search-group">
+              <label>Search</label>
+              <div className="search-bar">
+                <Search size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={searchValue}
+                  onChange={handleSearch}
+                  aria-label={searchPlaceholder}
+                />
               </div>
-            ))}
-            
-            {hasActiveFilters && (
-              <button className="btn btn-sm btn-secondary clear-filters" onClick={clearFilters}>
-                <X size={14} /> Clear
-              </button>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+
+          {filters.map((filter) => (
+            <div key={filter.key} className="filter-group">
+              <label>{filter.label}</label>
+              {filter.type === 'text' ? (
+                <input
+                  type="text"
+                  placeholder={filter.placeholder || ''}
+                  value={activeFilters[filter.key] || ''}
+                  onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                  className="filter-input"
+                />
+              ) : (
+                <select
+                  value={activeFilters[filter.key] || ''}
+                  onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                >
+                  <option value="">All</option>
+                  {filter.options?.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          ))}
+
+          {hasActiveFilters && (
+            <button className="btn btn-sm btn-secondary clear-filters" onClick={clearFilters}>
+              <X size={14} /> Clear
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
