@@ -158,16 +158,34 @@ export const landlordService = {
    * Get landlord payment summary
    */
   async getPaymentSummary(id) {
-    const { data, error } = await supabase
+    // Get confirmed payments
+    const { data: payments, error: paymentsError } = await supabase
       .from('payments')
       .select('amount, status')
       .eq('landlord_id', id)
       .eq('status', 'confirmed');
 
-    if (error) throw error;
+    if (paymentsError) throw paymentsError;
 
-    const totalPaid = data.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    return { totalPaid, paymentCount: data.length };
+    // Get expected payments from assigned payment types
+    const { data: assignedTypes, error: typesError } = await supabase
+      .from('landlord_payment_types')
+      .select('amount')
+      .eq('landlord_id', id)
+      .eq('active', true);
+
+    if (typesError) throw typesError;
+
+    const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    const totalExpected = assignedTypes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+    const totalDebt = Math.max(0, totalExpected - totalPaid);
+
+    return {
+      totalPaid,
+      paymentCount: payments.length,
+      totalExpected,
+      totalDebt
+    };
   },
 };
 

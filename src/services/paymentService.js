@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { generateReferenceCode } from '../utils/helpers';
 import { activityLogService, ACTION_TYPES, ENTITY_TYPES } from './activityLogService';
 import { transactionService } from './transactionService';
+import toastService from './toastService';
 
 export const paymentService = {
   /**
@@ -85,140 +86,158 @@ export const paymentService = {
    * Create a new payment
    */
   async create(payment, adminId) {
-    // Check landlord eligibility first
-    await this.checkLandlordEligibility(payment.landlord_id);
+    try {
+      // Check landlord eligibility first
+      await this.checkLandlordEligibility(payment.landlord_id);
 
-    // Get payment type name for reference code
-    const { data: paymentType } = await supabase
-      .from('payment_types')
-      .select('name')
-      .eq('id', payment.payment_type_id)
-      .single();
+      // Get payment type name for reference code
+      const { data: paymentType } = await supabase
+        .from('payment_types')
+        .select('name')
+        .eq('id', payment.payment_type_id)
+        .single();
 
-    // Set default values for new fields if not provided
-    const paymentWithDefaults = {
-      ...payment,
-      obligation_description: payment.obligation_description || '',
-      installment_number: payment.installment_number || 1,
-      total_installments: payment.total_installments || 1
-    };
+      // Set default values for new fields if not provided
+      const paymentWithDefaults = {
+        ...payment,
+        obligation_description: payment.obligation_description || '',
+        installment_number: payment.installment_number || 1,
+        total_installments: payment.total_installments || 1
+      };
 
-    const referenceCode = generateReferenceCode(
-      payment.landlord_id,
-      payment.payment_year,
-      payment.payment_month,
-      paymentType?.name || 'PAY'
-    );
+      const referenceCode = generateReferenceCode(
+        payment.landlord_id,
+        payment.payment_year,
+        payment.payment_month,
+        paymentType?.name || 'PAY'
+      );
 
-    const { data, error } = await supabase
-      .from('payments')
-      .insert([{
-        ...paymentWithDefaults,
-        reference_code: referenceCode,
-        logged_by: adminId,
-        status: 'pending',
-      }])
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('payments')
+        .insert([{
+          ...paymentWithDefaults,
+          reference_code: referenceCode,
+          logged_by: adminId,
+          status: 'pending',
+        }])
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Log the activity
-    await activityLogService.log({
-      adminId,
-      actionType: ACTION_TYPES.PAYMENT_LOGGED,
-      entityType: ENTITY_TYPES.PAYMENT,
-      entityId: data.id,
-      metadata: {
-        amount: payment.amount,
-        payment_type: paymentType?.name || 'unknown',
-        year: payment.payment_year,
-        month: payment.payment_month,
-        landlord_id: payment.landlord_id,
-      },
-    });
+      // Log the activity
+      await activityLogService.log({
+        adminId,
+        actionType: ACTION_TYPES.PAYMENT_LOGGED,
+        entityType: ENTITY_TYPES.PAYMENT,
+        entityId: data.id,
+        metadata: {
+          amount: payment.amount,
+          payment_type: paymentType?.name || 'unknown',
+          year: payment.payment_year,
+          month: payment.payment_month,
+          landlord_id: payment.landlord_id,
+        },
+      });
 
-    return data;
+      // Show success toast
+      toastService.success(`Payment logged successfully (Ref: ${referenceCode})`);
+
+      return data;
+    } catch (error) {
+      // Show error toast
+      toastService.error(`Failed to log payment: ${error.message}`);
+      throw error;
+    }
   },
 
   /**
    * Confirm a payment
    */
   async confirm(id, adminId) {
-    // Get payment details first
-    const { data: paymentData, error: fetchError } = await supabase
-      .from('payments')
-      .select(`
-        *,
-        landlords (id, full_name),
-        payment_types (name)
-      `)
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    // Update payment status
-    const { data, error } = await supabase
-      .from('payments')
-      .update({
-        status: 'confirmed',
-        confirmed_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('status', 'pending')
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Auto-create credit transaction for confirmed payment
     try {
-      // Get rent_income category
-      const categories = await transactionService.getCategories('credit');
-      const rentIncomeCategory = categories.find(c => c.name === 'rent_income');
-      
-      if (!rentIncomeCategory) {
-        console.warn('rent_income category not found. Transaction not created for payment:', data.id);
-      } else if (!adminId) {
-        console.warn('adminId is required to create transaction. Transaction not created for payment:', data.id);
-      } else {
-        const transaction = await transactionService.create({
-          transaction_type: 'credit',
-          category_id: rentIncomeCategory.id,
-          amount: parseFloat(data.amount),
-          description: `Payment from ${paymentData.landlords?.full_name || 'Landlord'} - ${paymentData.payment_types?.name || 'Payment'}`,
-          reference: data.reference_code,
-          landlord_id: data.landlord_id,
-          payment_id: data.id,
-        }, adminId);
+      // Get payment details first
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          landlords (id, full_name),
+          payment_types (name)
+        `)
+        .eq('id', id)
+        .single();
 
-        // Auto-approve the transaction if it's pending (payment-based transactions should always be approved)
-        if (transaction.status === 'pending') {
-          await transactionService.approve(transaction.id, adminId);
+      if (fetchError) throw fetchError;
+
+      // Update payment status
+      const { data, error } = await supabase
+        .from('payments')
+        .update({
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Auto-create credit transaction for confirmed payment
+      try {
+        // Get rent_income category
+        const categories = await transactionService.getCategories('credit');
+        const rentIncomeCategory = categories.find(c => c.name === 'rent_income');
+        
+        if (!rentIncomeCategory) {
+          console.warn('rent_income category not found. Transaction not created for payment:', data.id);
+        } else if (!adminId) {
+          console.warn('adminId is required to create transaction. Transaction not created for payment:', data.id);
+        } else {
+          const transaction = await transactionService.create({
+            transaction_type: 'credit',
+            category_id: rentIncomeCategory.id,
+            amount: parseFloat(data.amount),
+            description: `Payment from ${paymentData.landlords?.full_name || 'Landlord'} - ${paymentData.payment_types?.name || 'Payment'}`,
+            reference: data.reference_code,
+            landlord_id: data.landlord_id,
+            payment_id: data.id,
+          }, adminId);
+
+          // Auto-approve the transaction if it's pending (payment-based transactions should always be approved)
+          if (transaction.status === 'pending') {
+            await transactionService.approve(transaction.id, adminId);
+          }
         }
+      } catch (transactionError) {
+        // Log error but don't fail payment confirmation
+        console.error('Error creating transaction for payment:', transactionError);
+        console.error('Payment ID:', data.id, 'Admin ID:', adminId);
       }
-    } catch (transactionError) {
-      // Log error but don't fail payment confirmation
-      console.error('Error creating transaction for payment:', transactionError);
-      console.error('Payment ID:', data.id, 'Admin ID:', adminId);
-    }
 
-    // Log the activity
-    if (adminId) {
-      await activityLogService.log({
-        adminId,
-        actionType: ACTION_TYPES.PAYMENT_CONFIRMED,
-        entityType: ENTITY_TYPES.PAYMENT,
-        entityId: data.id,
-        metadata: {
-          amount: data.amount,
-          reference_code: data.reference_code,
-        },
-      });
-    }
+      // Log the activity
+      if (adminId) {
+        await activityLogService.log({
+          adminId,
+          actionType: ACTION_TYPES.PAYMENT_CONFIRMED,
+          entityType: ENTITY_TYPES.PAYMENT,
+          entityId: data.id,
+          metadata: {
+            amount: data.amount,
+            reference_code: data.reference_code,
+          },
+        });
+      }
 
-    return data;
+      // Show success toast
+      toastService.success(`Payment confirmed successfully (Ref: ${data.reference_code})`);
+
+      return data;
+    } catch (error) {
+      // Show error toast
+      toastService.error(`Failed to confirm payment: ${error.message}`);
+      throw error;
+    }
   },
 
   /**

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/LoginPage';
@@ -30,33 +31,35 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MainLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="landlords" element={<LandlordsPage />} />
-              <Route path="onboarding" element={<OnboardingPage />} />
-              <Route path="bulk-import" element={<BulkImportPage />} />
-              <Route path="payments" element={<PaymentsPage />} />
-              <Route path="receipts" element={<ReceiptsPage />} />
-              <Route path="financial-overview" element={<FinancialOverviewPage />} />
-              <Route path="transactions" element={<TransactionsPage />} />
-              <Route path="celebrations" element={<CelebrationsPage />} />
-              <Route path="audit-log" element={<AuditLogPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="landlords" element={<LandlordsPage />} />
+                <Route path="onboarding" element={<OnboardingPage />} />
+                <Route path="bulk-import" element={<BulkImportPage />} />
+                <Route path="payments" element={<PaymentsPage />} />
+                <Route path="receipts" element={<ReceiptsPage />} />
+                <Route path="financial-overview" element={<FinancialOverviewPage />} />
+                <Route path="transactions" element={<TransactionsPage />} />
+                <Route path="celebrations" element={<CelebrationsPage />} />
+                <Route path="audit-log" element={<AuditLogPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import PermissionGuard from '../auth/PermissionGuard';
+import ToastContainer from '../common/ToastContainer';
 
 const MainLayout = () => {
   // Mobile: sidebar open/closed (slides in/out)
@@ -58,6 +59,7 @@ const MainLayout = () => {
           <Outlet context={{ toggleSidebar, sidebarOpen, sidebarCollapsed }} />
         </PermissionGuard>
       </main>
+      <ToastContainer />
     </div>
   );
 };

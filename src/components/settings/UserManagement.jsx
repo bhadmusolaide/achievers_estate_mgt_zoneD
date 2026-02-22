@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Shield, Loader2, CheckCircle, AlertCircle, ChevronDown, ChevronUp, UserPlus, X, Eye, EyeOff } from 'lucide-react';
+import { Users, Shield, Loader2, CheckCircle, AlertCircle, ChevronDown, ChevronUp, UserPlus, X, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { userPermissionsService, FEATURE_DEFINITIONS, DEFAULT_PERMISSIONS } from '../../services/userPermissionsService';
+import { useToast } from '../../context/ToastContext';
 
 const UserManagement = () => {
   const [admins, setAdmins] = useState([]);
@@ -8,7 +9,6 @@ const UserManagement = () => {
   const [error, setError] = useState(null);
   const [expandedUser, setExpandedUser] = useState(null);
   const [saving, setSaving] = useState({});
-  const [message, setMessage] = useState({ type: '', text: '' });
 
   // Create user modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -22,6 +22,13 @@ const UserManagement = () => {
     zone: 'Zone D',
   });
   const [createError, setCreateError] = useState('');
+
+  // Delete user state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const { success, error: toastError } = useToast();
 
   useEffect(() => {
     loadAdmins();
@@ -44,7 +51,6 @@ const UserManagement = () => {
   const handlePermissionToggle = async (adminId, featureKey, currentValue) => {
     const savingKey = `${adminId}-${featureKey}`;
     setSaving(prev => ({ ...prev, [savingKey]: true }));
-    setMessage({ type: '', text: '' });
 
     try {
       const result = await userPermissionsService.updateSinglePermission(
@@ -61,12 +67,11 @@ const UserManagement = () => {
           }
           return admin;
         }));
-        setMessage({ type: 'success', text: 'Permission updated' });
-        setTimeout(() => setMessage({ type: '', text: '' }), 2000);
+        success('Permission updated');
       }
     } catch (err) {
       console.error('Error updating permission:', err);
-      setMessage({ type: 'error', text: 'Failed to update permission' });
+      toastError('Failed to update permission');
     } finally {
       setSaving(prev => ({ ...prev, [savingKey]: false }));
     }
@@ -126,12 +131,12 @@ const UserManagement = () => {
           zone: 'Zone D',
         });
         setShowCreateModal(false);
-        setMessage({ type: 'success', text: 'Admin user created successfully' });
-        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        success('Admin user created successfully');
       }
     } catch (err) {
       console.error('Error creating user:', err);
       setCreateError(err.message || 'Failed to create user');
+      toastError('Failed to create admin user');
     } finally {
       setCreating(false);
     }
@@ -148,6 +153,34 @@ const UserManagement = () => {
     });
     setCreateError('');
     setShowPassword(false);
+  };
+
+  // Delete user handlers
+  const openDeleteModal = (admin) => {
+    setUserToDelete(admin);
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setUserToDelete(null);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setDeleting(true);
+    try {
+      await userPermissionsService.deleteAdminUser(userToDelete.id);
+      await loadAdmins();
+      closeDeleteModal();
+      success(`Admin user "${userToDelete.full_name}" deleted successfully`);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      toastError(err.message || 'Failed to delete admin user');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -184,12 +217,7 @@ const UserManagement = () => {
         </button>
       </div>
 
-      {message.text && (
-        <div className={`${message.type}-message`} style={{ marginBottom: '1rem' }}>
-          {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-          <span>{message.text}</span>
-        </div>
-      )}
+
 
       <div className="user-list">
         {admins.map((admin) => {
@@ -232,7 +260,17 @@ const UserManagement = () => {
 
               {isExpanded && !isChairman && (
                 <div className="user-permissions">
-                  <h4>Feature Access</h4>
+                  <div className="permission-header">
+                    <h4>Feature Access</h4>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => openDeleteModal(admin)}
+                      title="Delete User"
+                    >
+                      <Trash2 size={16} />
+                      Delete User
+                    </button>
+                  </div>
                   <div className="permissions-grid">
                     {FEATURE_DEFINITIONS.map((feature) => {
                       const savingKey = `${admin.id}-${feature.key}`;
@@ -395,6 +433,57 @@ const UserManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && userToDelete && (
+        <div className="modal-overlay" onClick={closeDeleteModal}>
+          <div className="modal-content delete-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Delete Admin User</h3>
+              <button className="close-btn" onClick={closeDeleteModal}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="warning-message">
+                <AlertCircle size={24} />
+                <div>
+                  <p><strong>Are you sure you want to delete this admin user?</strong></p>
+                  <p>User: <strong>{userToDelete.full_name}</strong></p>
+                  <p>Email: {userToDelete.email}</p>
+                  <p className="mt-2">This action cannot be undone. The user will be permanently removed from the system.</p>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={closeDeleteModal}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteUser}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="spin" size={18} />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    Delete User
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
