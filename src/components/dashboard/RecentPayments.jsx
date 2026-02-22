@@ -24,6 +24,7 @@ const RecentPayments = ({ payments, loading }) => {
           <tr>
             <th>Landlord</th>
             <th>Address</th>
+            <th>Road</th>
             <th>Type</th>
             <th>Amount</th>
             <th>Status</th>
@@ -34,14 +35,8 @@ const RecentPayments = ({ payments, loading }) => {
           {payments.map((payment) => (
             <tr key={payment.id}>
               <td>{payment.landlords?.full_name}</td>
-              <td>
-                <div>
-                  {payment.landlords?.house_address}
-                  {payment.landlords?.road && (
-                    <div className="text-sm text-gray-500">{payment.landlords?.road}</div>
-                  )}
-                </div>
-              </td>
+              <td>{payment.landlords?.house_address}</td>
+              <td>{payment.landlords?.road || '-'}</td>
               <td className="capitalize">{payment.payment_types?.name}</td>
               <td>{formatCurrency(payment.amount)}</td>
               <td>

@@ -89,47 +89,56 @@ serve(async (req) => {
       .from('receipts').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'receipts', count: receiptsCount || 0, error: receiptsError?.message })
 
-    // 3. Delete transactions
+    // 3. Clear account_balance foreign key reference to transactions BEFORE deleting transactions
+    const { error: clearRefError } = await supabaseAdmin
+      .from('account_balance')
+      .update({ last_transaction_id: null })
+      .eq('id', '00000000-0000-0000-0000-000000000001')
+    if (clearRefError) {
+      console.error('Failed to clear account_balance reference:', clearRefError.message)
+    }
+
+    // 4. Delete transactions (now safe after clearing FK reference)
     const { count: txCount, error: txError } = await supabaseAdmin
       .from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'transactions', count: txCount || 0, error: txError?.message })
 
-    // 4. Delete payments
+    // 5. Delete payments
     const { count: paymentsCount, error: paymentsError } = await supabaseAdmin
       .from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'payments', count: paymentsCount || 0, error: paymentsError?.message })
 
-    // 5. Delete onboarding tasks
+    // 6. Delete onboarding tasks
     const { count: taskCount, error: taskError } = await supabaseAdmin
       .from('onboarding_tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'onboarding_tasks', count: taskCount || 0, error: taskError?.message })
 
-    // 6. Delete onboarding activity log
+    // 7. Delete onboarding activity log
     const { count: onboardLogCount, error: onboardLogError } = await supabaseAdmin
       .from('onboarding_activity_log').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'onboarding_activity_log', count: onboardLogCount || 0, error: onboardLogError?.message })
 
-    // 7. Delete celebrations queue
+    // 8. Delete celebrations queue
     const { count: celebCount, error: celebError } = await supabaseAdmin
       .from('celebrations_queue').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'celebrations_queue', count: celebCount || 0, error: celebError?.message })
 
-    // 8. Delete landlord payment types
+    // 9. Delete landlord payment types
     const { count: lptCount, error: lptError } = await supabaseAdmin
       .from('landlord_payment_types').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'landlord_payment_types', count: lptCount || 0, error: lptError?.message })
 
-    // 9. Delete landlords
+    // 10. Delete landlords
     const { count: landlordsCount, error: landlordsError } = await supabaseAdmin
       .from('landlords').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     deletionResults.push({ table: 'landlords', count: landlordsCount || 0, error: landlordsError?.message })
 
-    // 10. Reset account balance to 0
+    // 11. Reset account balance to 0
     const { error: balanceError } = await supabaseAdmin
       .from('account_balance').update({ balance: 0 }).eq('id', '00000000-0000-0000-0000-000000000001')
     deletionResults.push({ table: 'account_balance (reset)', count: balanceError ? 0 : 1, error: balanceError?.message })
 
-    // 11. Delete receipt files from storage
+    // 12. Delete receipt files from storage
     const { data: files } = await supabaseAdmin.storage.from('receipts').list()
     if (files && files.length > 0) {
       const filePaths = files.map(f => f.name)

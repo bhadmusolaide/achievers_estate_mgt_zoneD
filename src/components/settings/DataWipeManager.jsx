@@ -38,24 +38,26 @@ const DataWipeManager = () => {
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      let session = sessionData?.session ?? null;
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wipe-all-data`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ confirmationPhrase: confirmPhrase }),
-        }
-      );
+      if (!session) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        session = refreshed?.session ?? null;
+      }
 
-      const data = await response.json();
+      if (!session?.access_token) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to wipe data');
+      const { data, error } = await supabase.functions.invoke('wipe-all-data', {
+        body: { confirmationPhrase: confirmPhrase },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to wipe data');
       }
 
       setResult(data);
@@ -197,4 +199,3 @@ const DataWipeManager = () => {
 };
 
 export default DataWipeManager;
-
