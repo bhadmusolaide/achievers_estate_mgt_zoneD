@@ -11,7 +11,7 @@ const RecentPayments = ({ payments, loading }) => {
 
   if (!payments || payments.length === 0) {
     return (
-      <div className="recent-payments empty">
+      <div className="recent-payments empty table-empty">
         <p>No recent payments</p>
       </div>
     );
@@ -54,4 +54,3 @@ const RecentPayments = ({ payments, loading }) => {
 };
 
 export default RecentPayments;
-
