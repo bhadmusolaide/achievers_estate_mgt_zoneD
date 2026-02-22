@@ -16,7 +16,7 @@ const BulkImportLandlords = () => {
   const [step, setStep] = useState('upload');
 
   const displayFileName = selectedFileName || 'No file selected';
-  const requiredColumns = ['full_name', 'phone', 'occupancy_type'];
+  const requiredColumns = ['full_name', 'phone', 'occupancy_type', 'road'];
 
   const handleFileSelect = (event) => {
     const selectedFile = event.target.files[0];
@@ -309,7 +309,7 @@ const BulkImportLandlords = () => {
             <Upload size={48} className="text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Upload CSV File</h3>
             <p className="text-gray-600 mb-4">
-              Select a CSV file with landlord data. Required columns: full_name, phone, occupancy_type
+              Select a CSV file with landlord data. Required columns: full_name, phone, occupancy_type, road
             </p>
             <input
               ref={fileInputRef}
@@ -329,7 +329,7 @@ const BulkImportLandlords = () => {
           <div className="mt-6 bg-gray-50 p-4 rounded">
             <h4 className="font-semibold mb-2">CSV Format Requirements:</h4>
             <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-              <li><strong>Required:</strong> full_name, phone, occupancy_type</li>
+              <li><strong>Required:</strong> full_name, phone, occupancy_type, road</li>
               <li><strong>Optional:</strong> email, house_address, zone, date_of_birth, wedding_anniversary, celebrate_opt_in</li>
               <li><strong>Phone:</strong> Will be normalized (e.g., 0803xxxxxxx → +234803xxxxxxx)</li>
               <li><strong>Dates:</strong> DD-MM or MM-DD format (e.g., 25-12 or 12-25)</li>

@@ -41,6 +41,7 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
     if (!formData.full_name.trim()) newErrors.full_name = 'Name is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
     if (!formData.house_address.trim()) newErrors.house_address = 'Address is required';
+    if (!formData.road.trim()) newErrors.road = 'Road is required';
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
@@ -128,7 +129,7 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
           name="house_address"
           value={formData.house_address}
           onChange={handleChange}
-          placeholder="e.g., Block A, House 15"
+          placeholder="e.g. House 15"
           className={errors.house_address ? 'error' : ''}
           disabled={loading}
         />
@@ -136,7 +137,7 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
       </div>
 
       <div className="form-group">
-        <label htmlFor="road">Road</label>
+        <label htmlFor="road">Road *</label>
         <input
           type="text"
           id="road"
@@ -144,8 +145,10 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
           value={formData.road}
           onChange={handleChange}
           placeholder="e.g., Road 1, Road 3"
+          className={errors.road ? 'error' : ''}
           disabled={loading}
         />
+        {errors.road && <span className="error-text">{errors.road}</span>}
       </div>
 
       <div className="form-row">
