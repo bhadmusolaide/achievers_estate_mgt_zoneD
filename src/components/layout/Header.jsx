@@ -1,10 +1,10 @@
-import { Bell, Menu } from 'lucide-react';
+import { Bell, Menu, Moon, Sun } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Header = ({ title }) => {
   const { adminProfile } = useAuth();
-  const { toggleSidebar } = useOutletContext() || {};
+  const { toggleSidebar, theme, toggleTheme } = useOutletContext() || {};
 
   return (
     <header className="main-header">
@@ -16,6 +16,14 @@ const Header = ({ title }) => {
       </div>
 
       <div className="header-right">
+        <button
+          className="btn-icon"
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
         <button className="btn-icon" title="Notifications">
           <Bell size={20} />
         </button>
@@ -29,4 +37,3 @@ const Header = ({ title }) => {
 };
 
 export default Header;
-

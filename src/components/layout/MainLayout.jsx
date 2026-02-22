@@ -9,6 +9,10 @@ const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   // Desktop: sidebar collapsed (icons only) or expanded
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const storedTheme = localStorage.getItem('theme');
+    return storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'light';
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -23,6 +27,11 @@ const MainLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
   const toggleSidebar = () => {
     if (window.innerWidth <= 768) {
       setSidebarOpen(!sidebarOpen);
@@ -35,6 +44,10 @@ const MainLayout = () => {
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
     }
+  };
+
+  const toggleTheme = () => {
+    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
   };
 
   const layoutClasses = [
@@ -54,15 +67,20 @@ const MainLayout = () => {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
-      <main className="main-content">
-        <PermissionGuard>
-          <Outlet context={{ toggleSidebar, sidebarOpen, sidebarCollapsed }} />
-        </PermissionGuard>
-      </main>
+        <main className="main-content">
+          <PermissionGuard>
+            <Outlet context={{
+              toggleSidebar,
+              sidebarOpen,
+              sidebarCollapsed,
+              theme,
+              toggleTheme
+            }} />
+          </PermissionGuard>
+        </main>
       <ToastContainer />
     </div>
   );
 };
 
 export default MainLayout;
-
