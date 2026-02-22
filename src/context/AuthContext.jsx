@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
@@ -11,59 +11,44 @@ export const AuthProvider = ({ children }) => {
   const [adminProfile, setAdminProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(null);
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
-    // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession(); 
-        if (error) {
-          console.error('Error getting session:', error);
-          setUser(null);
-          setAdminProfile(null);
-          setLoading(false);
-          return;
-        }
-        
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchAdminProfile(session.user.id);
-        } else {
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        setUser(null);
-        setAdminProfile(null);
-        setProfileError('Authentication error occurred. Please log in again.');
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
+    // Listen for auth changes - this handles both initial session and subsequent changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        
-        if (event === 'SIGNED_OUT' || event === 'PASSWORD_CHANGE' || event === 'TOKEN_INVALIDATED' || !session) {
+
+        // Handle initial session load
+        if (event === 'INITIAL_SESSION') {
+          if (session?.user) {
+            setUser(session.user);
+            await fetchAdminProfile(session.user.id, true);
+          } else {
+            setUser(null);
+            setAdminProfile(null);
+            setLoading(false);
+          }
+          initialLoadDone.current = true;
+          return;
+        }
+
+        // Skip if initial load hasn't happened yet (prevents race conditions)
+        if (!initialLoadDone.current) {
+          return;
+        }
+
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_INVALIDATED' || !session) {
           // Clear all auth state
           setUser(null);
           setAdminProfile(null);
           setProfileError(null);
           setLoading(false);
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          const sessionUserId = session?.user?.id;
-          const currentUserID = user?.id;
-          
-          // Only update user state if different user or if no user was set before
-          if (sessionUserId !== currentUserID) {
-            setUser(session?.user ?? null);
-          }
+          setUser(session?.user ?? null);
           if (session?.user) {
             try {
-              await fetchAdminProfile(session.user.id);
+              await fetchAdminProfile(session.user.id, false);
             } catch (error) {
               console.error('Error fetching profile after auth change:', error);
               setProfileError('Failed to load user profile. Please log in again.');
@@ -73,14 +58,26 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, []); // Keep empty dependency array to subscribe only once
+    // Fallback timeout to prevent infinite loading (Chrome issue workaround)
+    const timeoutId = setTimeout(() => {
+      if (!initialLoadDone.current) {
+        console.warn('Auth initialization timed out, forcing completion');
+        initialLoadDone.current = true;
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
 
-  const fetchAdminProfile = async (userId) => {
+  const fetchAdminProfile = async (userId, isInitialLoad = false) => {
     try {
       setProfileError(null);
-      console.log('Fetching admin profile for:', userId);
+      console.log('Fetching admin profile for:', userId, 'isInitialLoad:', isInitialLoad);
 
       // Fetch admin profile with Supabase's built-in timeout handling
       const { data, error, status } = await supabase
@@ -114,9 +111,8 @@ export const AuthProvider = ({ children }) => {
       }
       setAdminProfile(null);
     } finally {
-      // Only set loading to false on initial load, not on subsequent profile updates
-      // We can check if this is the first load by seeing if adminProfile was previously null
-      if (!adminProfile) {
+      // Always set loading to false on initial load
+      if (isInitialLoad) {
         console.log('Setting loading to false after initial profile load');
         setLoading(false);
       }
