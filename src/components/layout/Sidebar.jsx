@@ -24,17 +24,72 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
   const { adminProfile, signOut } = useAuth();
 
   const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/landlords', icon: Users, label: 'Landlords' },
-    { to: '/financial-overview', icon: PieChart, label: 'Est. Payment Center' },
-    { to: '/transactions', icon: ArrowLeftRight, label: 'Account Management' },
-    { to: '/payments', icon: CreditCard, label: 'Payments' },
-    { to: '/receipts', icon: Receipt, label: 'Receipts' },
-    { to: '/onboarding', icon: ClipboardList, label: 'Onboarding' },  
-    { to: '/celebrations', icon: PartyPopper, label: 'Celebrations' },
-    { to: '/bulk-import', icon: Upload, label: 'Bulk Import' },
-    { to: '/audit-log', icon: ScrollText, label: 'Audit Log' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
+    {
+      to: '/dashboard',
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      tooltip: 'Your command center for today—track key metrics, alerts, and activity at a glance.'
+    },
+    {
+      to: '/landlords',
+      icon: Users,
+      label: 'Landlords',
+      tooltip: 'Manage landlord profiles, contact details, and property information.'
+    },
+    {
+      to: '/financial-overview',
+      icon: PieChart,
+      label: 'Est. Payment Center',
+      tooltip: 'See who owes what, what has been paid, and outstanding balances by landlord.'
+    },
+    {
+      to: '/transactions',
+      icon: ArrowLeftRight,
+      label: 'Account Management',
+      tooltip: 'Review credits and debits, and keep the estate account reconciled.'
+    },
+    {
+      to: '/payments',
+      icon: CreditCard,
+      label: 'Payments',
+      tooltip: 'Log and confirm incoming payments from landlords.'
+    },
+    {
+      to: '/receipts',
+      icon: Receipt,
+      label: 'Receipts',
+      tooltip: 'Generate and view receipts for recorded payments.'
+    },
+    {
+      to: '/onboarding',
+      icon: ClipboardList,
+      label: 'Onboarding',
+      tooltip: 'Track new landlord onboarding tasks and completion status.'
+    },
+    {
+      to: '/celebrations',
+      icon: PartyPopper,
+      label: 'Celebrations',
+      tooltip: 'Manage birthday and celebration messaging for landlords.'
+    },
+    {
+      to: '/bulk-import',
+      icon: Upload,
+      label: 'Bulk Import',
+      tooltip: 'Upload many landlords at once using a spreadsheet.'
+    },
+    {
+      to: '/audit-log',
+      icon: ScrollText,
+      label: 'Audit Log',
+      tooltip: 'Review a chronological trail of key actions in the system.'
+    },
+    {
+      to: '/settings',
+      icon: Settings,
+      label: 'Settings',
+      tooltip: 'Configure system preferences, roles, and operational rules.'
+    },
   ];
 
   // Filter nav items based on user permissions
@@ -69,7 +124,7 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
                 to={item.to}
                 className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
                 onClick={onNavClick}
-                title={collapsed ? item.label : undefined}
+                title={item.tooltip}
               >
                 <item.icon size={20} />
                 {!collapsed && <span>{item.label}</span>}
@@ -110,4 +165,3 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
 };
 
 export default Sidebar;
-
