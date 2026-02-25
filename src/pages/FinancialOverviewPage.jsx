@@ -147,18 +147,6 @@ const FinancialOverviewPage = () => {
     loadData();
   };
 
-  const handleMarkAsPaid = async (landlord) => {
-    if (landlord.balance <= 0) return; // Already paid
-
-    try {
-      await financialOverviewService.createOutstandingPayments(landlord.id, adminProfile.id);
-      loadData(); // Refresh data
-    } catch (error) {
-      console.error('Error marking as paid:', error);
-      alert('Failed to mark as paid: ' + error.message);
-    }
-  };
-
   const handlePartialPayment = (landlord) => {
     setSelectedLandlordForPartial(landlord);
     setShowPartialModal(true);
@@ -338,20 +326,9 @@ const FinancialOverviewPage = () => {
     {
       key: 'actions',
       header: 'Actions',
-      width: '120px',
+      width: '100px',
       render: (row) => (
         <div className="action-buttons" style={{ display: 'flex', gap: '4px' }}>
-          <button
-            className="btn-icon"
-            title="Mark as Paid"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMarkAsPaid(row);
-            }}
-            disabled={row.balance <= 0}
-          >
-            <CheckCircle size={16} />
-          </button>
           <button
             className="btn-icon"
             title="Record Payment"
