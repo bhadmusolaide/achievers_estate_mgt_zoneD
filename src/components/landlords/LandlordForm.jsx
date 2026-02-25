@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
+import { TITLE_OPTIONS } from '../../utils/helpers';
 
 const getInitialFormData = (landlord) => ({
+  title: landlord?.title || '',
   full_name: landlord?.full_name || '',
   phone: landlord?.phone || '',
   email: landlord?.email || '',
@@ -77,18 +79,36 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
 
   return (
     <form onSubmit={handleSubmit} className="form">
-      <div className="form-group">
-        <label htmlFor="full_name">Full Name *</label>
-        <input
-          type="text"
-          id="full_name"
-          name="full_name"
-          value={formData.full_name}
-          onChange={handleChange}
-          className={errors.full_name ? 'error' : ''}
-          disabled={loading}
-        />
-        {errors.full_name && <span className="error-text">{errors.full_name}</span>}
+      <div className="form-row">
+        <div className="form-group" style={{ flex: '0 0 120px' }}>
+          <label htmlFor="title">Title</label>
+          <select
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            disabled={loading}
+          >
+            {TITLE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label htmlFor="full_name">Full Name *</label>
+          <input
+            type="text"
+            id="full_name"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            className={errors.full_name ? 'error' : ''}
+            disabled={loading}
+          />
+          {errors.full_name && <span className="error-text">{errors.full_name}</span>}
+        </div>
       </div>
 
       <div className="form-row">

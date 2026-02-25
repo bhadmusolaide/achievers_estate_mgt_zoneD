@@ -56,6 +56,7 @@ const computeUpcomingEvents = (landlords = [], type, windowDays = DAYS_WINDOW) =
         computed: true,
         landlords: {
           id: ll.id,
+          title: ll.title,
           full_name: ll.full_name,
           phone: ll.phone,
           email: ll.email,
@@ -98,6 +99,7 @@ export const celebrationService = {
         *,
         landlords (
           id,
+          title,
           full_name,
           phone,
           email,
@@ -137,7 +139,7 @@ export const celebrationService = {
     // Fallback: compute directly from landlords without needing the queue/cron
     const { data: landlords, error } = await supabase
       .from('landlords')
-      .select('id, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
+      .select('id, title, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
       .eq('status', 'active')
       .eq('celebrate_opt_in', true);
 
@@ -158,6 +160,7 @@ export const celebrationService = {
         *,
         landlords (
           id,
+          title,
           full_name,
           phone,
           email,
@@ -194,7 +197,7 @@ export const celebrationService = {
     if (counts.birthdays === 0 || counts.anniversaries === 0) {
       const { data: landlords } = await supabase
         .from('landlords')
-        .select('id, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
+        .select('id, title, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
         .eq('status', 'active')
         .eq('celebrate_opt_in', true);
       const eligible = (landlords || []).filter((ll) => ll.onboarding_status === 'active' || ll.onboarding_status === 'pending' || ll.onboarding_status == null);
@@ -260,6 +263,7 @@ export const celebrationService = {
         *,
         landlords (
           id,
+          title,
           full_name,
           phone,
           email,
@@ -279,6 +283,7 @@ export const celebrationService = {
             *,
             landlords (
               id,
+              title,
               full_name,
               phone,
               email,

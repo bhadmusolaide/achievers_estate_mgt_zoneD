@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save, RefreshCw, Loader2 } from 'lucide-react';
 import { celebrationService } from '../../services/celebrationService';
+import { formatLandlordName } from '../../utils/helpers';
 
 const ESTATE_NAME = import.meta.env.VITE_ESTATE_NAME || 'Zone-D Estate';
 
@@ -13,7 +14,7 @@ const MessageEditor = ({ celebration, onSave, onCancel }) => {
 
   const replaceTemplateVariables = (template) => {
     return template
-      .replace(/{landlord_name}/g, landlord?.full_name || 'Valued Resident')
+      .replace(/{landlord_name}/g, formatLandlordName(landlord) || 'Valued Resident')
       .replace(/{estate_name}/g, ESTATE_NAME)
       .replace(/{chairman_name}/g, 'The Chairman')
       .replace(/{zone}/g, landlord?.zone || 'Zone D');
@@ -83,7 +84,7 @@ const MessageEditor = ({ celebration, onSave, onCancel }) => {
       <div className="editor-header">
         <h4>
           {celebration.celebration_type === 'birthday' ? 'Birthday' : 'Anniversary'} Message for{' '}
-          {landlord?.full_name}
+          {formatLandlordName(landlord)}
         </h4>
         <button
           className="btn btn-sm btn-secondary"

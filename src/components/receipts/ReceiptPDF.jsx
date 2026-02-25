@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-import { formatCurrency, formatDate, getMonthName } from '../../utils/helpers';
+import { formatCurrency, formatDate, getMonthName, formatLandlordName } from '../../utils/helpers';
 
 const styles = StyleSheet.create({
   page: {
@@ -121,7 +121,7 @@ const ReceiptPDF = ({ receipt, payment, landlord, admin }) => {
         <View style={styles.section}>
           <View style={styles.row}>
             <Text style={styles.label}>Landlord Name:</Text>
-            <Text style={styles.value}>{landlord.full_name}</Text>
+            <Text style={styles.value}>{formatLandlordName(landlord)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>House Address:</Text>

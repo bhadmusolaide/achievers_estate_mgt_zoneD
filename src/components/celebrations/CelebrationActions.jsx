@@ -3,6 +3,7 @@ import { CheckCircle, Send, XCircle, Loader2, Mail, MessageSquare, MapPin } from
 import { celebrationService } from '../../services/celebrationService';
 import { celebrationMessagingService } from '../../services/celebrationMessagingService';
 import { useAuth } from '../../context/AuthContext';
+import { formatLandlordName } from '../../utils/helpers';
 
 const CelebrationActions = ({ celebration, onComplete }) => {
   const { adminProfile } = useAuth();
@@ -84,7 +85,7 @@ const CelebrationActions = ({ celebration, onComplete }) => {
   return (
     <div className="celebration-actions">
       <div className="action-info">
-        <h4>{landlord?.full_name}</h4>
+        <h4>{formatLandlordName(landlord)}</h4>
         <p>
           {celebration.celebration_type === 'birthday' ? 'Birthday' : 'Wedding Anniversary'}
           {' on '}

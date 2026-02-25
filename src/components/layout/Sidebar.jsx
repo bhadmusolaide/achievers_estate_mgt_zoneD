@@ -46,7 +46,7 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
         <Home size={28} />
         {!collapsed && (
           <div className="sidebar-brand">
-            <h2>Achievers - Zone D</h2>
+            <h4>Achievers 1 - Zone D</h4>
             <span>Estate Management System</span>
           </div>
         )}

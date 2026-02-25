@@ -9,7 +9,7 @@ import PaymentConfirm from '../components/payments/PaymentConfirm';
 import { paymentService } from '../services/paymentService';
 import { receiptService } from '../services/receiptService';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, formatDateTime, getStatusClass, getMonthName } from '../utils/helpers';
+import { formatCurrency, formatDateTime, getStatusClass, getMonthName, formatLandlordName } from '../utils/helpers';
 
 const PaymentsPage = () => {
   const { adminProfile } = useAuth();
@@ -100,7 +100,7 @@ const PaymentsPage = () => {
     { 
       key: 'landlord', 
       header: 'Landlord',
-      render: (row) => row.landlords?.full_name
+      render: (row) => formatLandlordName(row.landlords)
     },
     { 
       key: 'type', 
@@ -188,7 +188,7 @@ const PaymentsPage = () => {
           <div className="payment-details">
             <div className="detail-row">
               <span>Landlord:</span>
-              <span>{selectedPayment.landlords?.full_name}</span>
+              <span>{formatLandlordName(selectedPayment.landlords)}</span>
             </div>
             <div className="detail-row">
               <span>Address:</span>

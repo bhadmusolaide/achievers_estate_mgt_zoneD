@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 interface LandlordData {
+  title?: string
   full_name: string
   phone: string
   email?: string

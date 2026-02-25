@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatCurrency, formatDate } from '../../utils/helpers';
+import { formatCurrency, formatDate, formatLandlordName } from '../../utils/helpers';
 
 const styles = StyleSheet.create({
   page: {
@@ -190,7 +190,7 @@ const FinancialReportPDF = ({ data, totals, filters }) => {
             style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlt]}
             wrap={false}
           >
-            <Text style={[styles.tableCell, styles.colName]}>{landlord.full_name}</Text>
+            <Text style={[styles.tableCell, styles.colName]}>{formatLandlordName(landlord)}</Text>
             <Text style={[styles.tableCell, styles.colZone]}>{landlord.zone}</Text>
             <Text style={[styles.tableCell, styles.colTypes]}>
               {landlord.assignedPaymentTypes.map(t => t.name).join(', ') || '-'}
