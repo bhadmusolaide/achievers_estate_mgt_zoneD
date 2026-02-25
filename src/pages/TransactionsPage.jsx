@@ -10,7 +10,7 @@ import TransactionForm from '../components/transactions/TransactionForm';
 import ConfirmActionModal from '../components/common/ConfirmActionModal';
 import { transactionService } from '../services/transactionService';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, formatDateTime, getStatusClass } from '../utils/helpers';
+import { formatCurrency, formatDateTime, getStatusClass, formatLandlordName } from '../utils/helpers';
 
 const TransactionsPage = () => {
   const { adminProfile } = useAuth();
@@ -192,7 +192,7 @@ const TransactionsPage = () => {
       t.description || '',
       t.reference || '',
       t.status,
-      t.landlords?.full_name || '',
+      formatLandlordName(t.landlords) || '',
       t.admin_profiles?.full_name || '',
     ]);
 
@@ -291,7 +291,7 @@ const TransactionsPage = () => {
       key: 'landlord',
       header: 'Landlord',
       width: '150px',
-      render: (row) => row.landlords?.full_name || '-'
+      render: (row) => formatLandlordName(row.landlords) || '-'
     },
     {
       key: 'actions',
@@ -486,7 +486,7 @@ const TransactionsPage = () => {
             {selectedTransaction.landlords && (
               <div className="detail-row">
                 <span className="detail-label">Landlord:</span>
-                <span>{selectedTransaction.landlords.full_name}</span>
+                <span>{formatLandlordName(selectedTransaction.landlords)}</span>
               </div>
             )}
             <div className="detail-row">

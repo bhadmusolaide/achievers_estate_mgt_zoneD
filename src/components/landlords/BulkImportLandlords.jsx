@@ -330,7 +330,7 @@ const BulkImportLandlords = () => {
             <h4 className="font-semibold mb-2">CSV Format Requirements:</h4>
             <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
               <li><strong>Required:</strong> full_name, phone, occupancy_type, road</li>
-              <li><strong>Optional:</strong> email, house_address, zone, date_of_birth, wedding_anniversary, celebrate_opt_in</li>
+              <li><strong>Optional:</strong> title, email, house_address, zone, date_of_birth, wedding_anniversary, celebrate_opt_in</li>
               <li><strong>Phone:</strong> Will be normalized (e.g., 0803xxxxxxx → +234803xxxxxxx)</li>
               <li><strong>Dates:</strong> DD-MM or MM-DD format (e.g., 25-12 or 12-25)</li>
               <li><strong>celebrate_opt_in:</strong> true/false, 1/0, yes/no</li>

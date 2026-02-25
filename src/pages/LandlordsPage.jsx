@@ -7,7 +7,7 @@ import Modal from '../components/common/Modal';
 import LandlordForm from '../components/landlords/LandlordForm';
 import LandlordProfile from '../components/landlords/LandlordProfile';
 import { landlordService } from '../services/landlordService';
-import { getStatusClass } from '../utils/helpers';
+import { getStatusClass, formatLandlordName } from '../utils/helpers';
 
 const LandlordsPage = () => {
   const [landlords, setLandlords] = useState([]);
@@ -97,7 +97,12 @@ const LandlordsPage = () => {
   };
 
   const columns = [
-    { key: 'full_name', header: 'Name', sortable: true },
+    {
+      key: 'full_name',
+      header: 'Name',
+      sortable: true,
+      render: (row) => formatLandlordName(row)
+    },
     { key: 'email', header: 'Email', sortable: true },
     { key: 'phone', header: 'Phone', sortable: true },
     { key: 'house_address', header: 'Address', sortable: true },

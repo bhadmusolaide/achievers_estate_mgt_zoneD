@@ -15,7 +15,7 @@ import FinancialReportPDF from '../components/financial/FinancialReportPDF';
 import { financialOverviewService } from '../services/financialOverviewService';
 import { transactionService } from '../services/transactionService';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, formatDate } from '../utils/helpers';
+import { formatCurrency, formatDate, formatLandlordName } from '../utils/helpers';
 
 const FinancialOverviewPage = () => {
   const { adminProfile } = useAuth();
@@ -177,7 +177,7 @@ const FinancialOverviewPage = () => {
       
       const headers = ['Landlord Name', 'Zone', 'Payment Types', 'Expected', 'Paid', 'Balance', 'Status', 'Last Payment'];
       const rows = exportResult.map(row => [
-        row.full_name,
+        formatLandlordName(row),
         row.zone,
         row.assignedPaymentTypes.map(t => t.name).join('; '),
         row.totalExpected,
@@ -258,7 +258,7 @@ const FinancialOverviewPage = () => {
       sortable: true,
       render: (row) => (
         <div className="landlord-cell">
-          <span className="landlord-name">{row.full_name}</span>
+          <span className="landlord-name">{formatLandlordName(row)}</span>
           <span className="landlord-address">{row.house_address}</span>
         </div>
       )
@@ -266,17 +266,28 @@ const FinancialOverviewPage = () => {
     {
       key: 'assignedPaymentTypes',
       header: 'Payment Types',
-      width: '150px',
+      width: '200px',
       render: (row) => (
         <div className="payment-types-cell">
           {row.assignedPaymentTypes.length > 0 ? (
             row.assignedPaymentTypes.map(type => (
-              <span key={type.id} className="payment-type-chip">
-                {type.name}
-              </span>
+              <div key={type.id} className="payment-type-breakdown" title={`Expected: ${formatCurrency(type.expected)} | Paid: ${formatCurrency(type.paid)} | Balance: ${formatCurrency(type.balance)}`}>
+                <span className={`payment-type-chip ${type.balance <= 0 ? 'paid' : type.paid > 0 ? 'partial' : 'pending'}`}>
+                  {type.name}
+                </span>
+                <span className="payment-type-amounts">
+                  {formatCurrency(type.paid)}/{formatCurrency(type.expected)}
+                </span>
+              </div>
             ))
           ) : (
-            <span className="no-types">None</span>
+            <span className="no-types">None assigned</span>
+          )}
+          {row.totalUnassignedPaid > 0 && (
+            <div className="unassigned-payments" title="Payments for unassigned payment types">
+              <span className="payment-type-chip other">Other</span>
+              <span className="payment-type-amounts">{formatCurrency(row.totalUnassignedPaid)}</span>
+            </div>
           )}
         </div>
       )

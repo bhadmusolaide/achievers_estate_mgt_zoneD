@@ -1,5 +1,5 @@
 import { User, Phone, Mail, Home, Calendar, CreditCard } from 'lucide-react';
-import { formatCurrency, formatDate, getStatusClass } from '../../utils/helpers';
+import { formatCurrency, formatDate, getStatusClass, formatLandlordName } from '../../utils/helpers';
 
 const LandlordProfile = ({ landlord, paymentSummary }) => {
   if (!landlord) return null;
@@ -11,7 +11,7 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
           {landlord.full_name?.charAt(0) || 'L'}
         </div>
         <div className="profile-info">
-          <h2>{landlord.full_name}</h2>
+          <h2>{formatLandlordName(landlord)}</h2>
           <span className={`badge ${getStatusClass(landlord.status)}`}>
             {landlord.status}
           </span>

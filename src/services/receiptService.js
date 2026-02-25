@@ -13,7 +13,7 @@ export const receiptService = {
         *,
         payments (
           *,
-          landlords (full_name, phone, email, house_address),
+          landlords (title, full_name, phone, email, house_address),
           payment_types (name)
         )
       `)

@@ -1,5 +1,6 @@
 import { User, MapPin, Calendar, CheckCircle, Circle, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { formatLandlordName } from '../../utils/helpers';
 
 const OnboardingLandlordCard = ({ landlord, onViewTasks, isSelected, onSelect }) => {
   const tasks = landlord.onboarding_tasks || [];
@@ -31,7 +32,7 @@ const OnboardingLandlordCard = ({ landlord, onViewTasks, isSelected, onSelect })
             <User size={20} />
           </div>
           <div>
-            <h4>{landlord.full_name}</h4>
+            <h4>{formatLandlordName(landlord)}</h4>
             <span className="address">
               <MapPin size={14} />
               {landlord.house_address}

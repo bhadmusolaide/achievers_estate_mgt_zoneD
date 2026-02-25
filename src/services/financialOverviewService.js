@@ -18,6 +18,7 @@ export const financialOverviewService = {
       .from('landlords')
       .select(`
         id,
+        title,
         full_name,
         phone,
         house_address,
@@ -69,11 +70,6 @@ export const financialOverviewService = {
     const { data: landlords, error, count } = await query;
     if (error) throw error;
 
-    // Get current date for frequency calculations
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1; // JS months are 0-based
-    const currentYear = now.getFullYear();
-
     // Get landlord payment type assignments for these landlords
     const landlordIds = landlords.map(l => l.id);
     let landlordPaymentTypes = [];
@@ -122,12 +118,23 @@ export const financialOverviewService = {
     if (lastPaymentsError) throw lastPaymentsError;
 
     // Create lookup maps
-    const paymentsByLandlord = {};
+    // Group payments by landlord AND payment_type for proper matching
+    const paymentsByLandlordAndType = {};
     payments.forEach(p => {
-      if (!paymentsByLandlord[p.landlord_id]) {
-        paymentsByLandlord[p.landlord_id] = [];
+      const key = `${p.landlord_id}_${p.payment_type_id}`;
+      if (!paymentsByLandlordAndType[key]) {
+        paymentsByLandlordAndType[key] = [];
       }
-      paymentsByLandlord[p.landlord_id].push(p);
+      paymentsByLandlordAndType[key].push(p);
+    });
+
+    // Also keep a flat list of all payments per landlord for "other payments" tracking
+    const allPaymentsByLandlord = {};
+    payments.forEach(p => {
+      if (!allPaymentsByLandlord[p.landlord_id]) {
+        allPaymentsByLandlord[p.landlord_id] = [];
+      }
+      allPaymentsByLandlord[p.landlord_id].push(p);
     });
 
     const landlordPaymentTypesByLandlord = {};
@@ -148,40 +155,59 @@ export const financialOverviewService = {
     // Process landlord data with calculations
     const processedData = landlords.map(landlord => {
       const activeAssignments = landlordPaymentTypesByLandlord[landlord.id] || [];
+      const allLandlordPayments = allPaymentsByLandlord[landlord.id] || [];
 
-      // Calculate expected amount as sum of all assigned payment types
-      const totalExpected = activeAssignments.reduce((sum, lpt) => {
-        const amount = parseFloat(lpt.amount || 0);
-        return sum + amount;
-      }, 0);
+      // Get all assigned payment type IDs for this landlord
+      const assignedTypeIds = new Set(activeAssignments.map(a => a.payment_type_id));
 
-      const landlordPayments = paymentsByLandlord[landlord.id] || [];
-      const totalPaid = landlordPayments.reduce(
-        (sum, p) => sum + parseFloat(p.amount), 0
-      );
+      // Calculate per-payment-type breakdown with matched payments
+      const paymentTypeBreakdown = activeAssignments.map(assignment => {
+        const key = `${landlord.id}_${assignment.payment_type_id}`;
+        const matchedPayments = paymentsByLandlordAndType[key] || [];
+        const expectedAmount = parseFloat(assignment.amount || 0);
+        const paidAmount = matchedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        const balance = expectedAmount - paidAmount;
 
-      const balance = totalExpected - totalPaid;
+        return {
+          id: assignment.payment_type_id,
+          name: assignment.payment_types?.name,
+          frequency: assignment.frequency || assignment.payment_types?.frequency || 'monthly',
+          expected: expectedAmount,
+          paid: paidAmount,
+          balance: balance
+        };
+      });
 
+      // Calculate totals from the breakdown (only matched payments count toward assigned balances)
+      const totalExpected = paymentTypeBreakdown.reduce((sum, pt) => sum + pt.expected, 0);
+      const totalPaidForAssigned = paymentTypeBreakdown.reduce((sum, pt) => sum + pt.paid, 0);
+      const totalBalance = paymentTypeBreakdown.reduce((sum, pt) => sum + pt.balance, 0);
+
+      // Calculate unassigned payments (payments for types not in landlord's assignments)
+      const unassignedPayments = allLandlordPayments.filter(p => !assignedTypeIds.has(p.payment_type_id));
+      const totalUnassignedPaid = unassignedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+      // Total paid includes both assigned and unassigned payments
+      const totalPaid = totalPaidForAssigned + totalUnassignedPaid;
+
+      // Determine payment status based on assigned payment types only
       let paymentStatus = 'pending';
       if (totalExpected > 0) {
-        if (balance <= 0) {
+        if (totalBalance <= 0) {
           paymentStatus = 'paid';
-        } else if (totalPaid > 0) {
+        } else if (totalPaidForAssigned > 0) {
           paymentStatus = 'partial';
         }
       }
 
       return {
         ...landlord,
-        assignedPaymentTypes: activeAssignments.map(a => ({
-          id: a.payment_type_id,
-          name: a.payment_types?.name,
-          amount: parseFloat(a.amount || 0),
-          frequency: a.payment_types?.frequency || 'monthly'
-        })),
+        assignedPaymentTypes: paymentTypeBreakdown,
         totalExpected,
         totalPaid,
-        balance,
+        totalPaidForAssigned,
+        totalUnassignedPaid,
+        balance: totalBalance,
         paymentStatus,
         lastPaymentDate: lastPaymentByLandlord[landlord.id] || null
       };

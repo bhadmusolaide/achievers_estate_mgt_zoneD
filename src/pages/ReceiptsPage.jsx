@@ -6,7 +6,7 @@ import SearchFilter from '../components/common/SearchFilter';
 import Modal from '../components/common/Modal';
 import ReceiptActions from '../components/receipts/ReceiptActions';
 import { receiptService } from '../services/receiptService';
-import { formatCurrency, formatDateTime } from '../utils/helpers';
+import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 
 const ReceiptsPage = () => {
@@ -52,7 +52,7 @@ const ReceiptsPage = () => {
     { 
       key: 'landlord', 
       header: 'Landlord',
-      render: (row) => row.payments?.landlords?.full_name
+      render: (row) => formatLandlordName(row.payments?.landlords)
     },
     { 
       key: 'type', 
@@ -144,7 +144,7 @@ const ReceiptsPage = () => {
               </div>
               <div className="info-row">
                 <span>Landlord:</span>
-                <span>{selectedReceipt.payments?.landlords?.full_name}</span>
+                <span>{formatLandlordName(selectedReceipt.payments?.landlords)}</span>
               </div>
               <div className="info-row">
                 <span>Address:</span>

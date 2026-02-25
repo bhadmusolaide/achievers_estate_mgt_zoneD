@@ -94,3 +94,44 @@ export const truncateText = (text, maxLength = 50) => {
   return text.substring(0, maxLength) + '...';
 };
 
+/**
+ * Title options for landlords (African context)
+ */
+export const TITLE_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'Mr', label: 'Mr' },
+  { value: 'Mrs', label: 'Mrs' },
+  { value: 'Miss', label: 'Miss' },
+  { value: 'Ms', label: 'Ms' },
+  { value: 'Dr', label: 'Dr' },
+  { value: 'Prof', label: 'Prof' },
+  { value: 'Engr', label: 'Engr' },
+  { value: 'Arc', label: 'Arc' },
+  { value: 'Barr', label: 'Barr' },
+  { value: 'Chief', label: 'Chief' },
+  { value: 'Alhaji', label: 'Alhaji' },
+  { value: 'Alhaja', label: 'Alhaja' },
+  { value: 'Pastor', label: 'Pastor' },
+  { value: 'Rev', label: 'Rev' },
+  { value: 'Elder', label: 'Elder' },
+  { value: 'Deacon', label: 'Deacon' },
+  { value: 'Deaconess', label: 'Deaconess' },
+  { value: 'Hon', label: 'Hon' },
+  { value: 'Sir', label: 'Sir' },
+  { value: 'Dame', label: 'Dame' },
+];
+
+/**
+ * Format landlord display name with title
+ * @param {Object} landlord - Landlord object with title and full_name
+ * @returns {string} Formatted name with title prefix
+ */
+export const formatLandlordName = (landlord) => {
+  if (!landlord) return '';
+  const { title, full_name } = landlord;
+  if (title && full_name) {
+    return `${title} ${full_name}`;
+  }
+  return full_name || '';
+};
+

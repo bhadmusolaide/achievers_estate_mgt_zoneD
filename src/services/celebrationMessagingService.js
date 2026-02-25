@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { celebrationService } from './celebrationService';
 import { messagingService } from './messagingService';
+import { formatLandlordName } from '../utils/helpers';
 
 const ESTATE_NAME = import.meta.env.VITE_ESTATE_NAME || 'Zone-D Estate';
 
@@ -29,7 +30,7 @@ export const celebrationMessagingService = {
             channel,
             phone: landlord.phone,
             email: landlord.email,
-            landlordName: landlord.full_name,
+            landlordName: formatLandlordName(landlord),
             celebrationType: celebration.celebration_type,
             message,
           },
@@ -55,7 +56,7 @@ export const celebrationMessagingService = {
    */
   replaceTemplateVariables(template, landlord) {
     return template
-      .replace(/{landlord_name}/g, landlord?.full_name || 'Valued Resident')
+      .replace(/{landlord_name}/g, formatLandlordName(landlord) || 'Valued Resident')
       .replace(/{estate_name}/g, ESTATE_NAME)
       .replace(/{chairman_name}/g, 'The Chairman')
       .replace(/{zone}/g, landlord?.zone || 'Zone D');
@@ -65,8 +66,9 @@ export const celebrationMessagingService = {
    * Get default message if no template exists
    */
   getDefaultMessage(celebrationType, landlord) {
+    const landlordName = formatLandlordName(landlord);
     if (celebrationType === 'birthday') {
-      return `Dear ${landlord.full_name},
+      return `Dear ${landlordName},
 
 Wishing you a very Happy Birthday! 🎂🎉
 
@@ -76,7 +78,7 @@ Warm regards,
 Zone-D Estate Management`;
     }
 
-    return `Dear ${landlord.full_name},
+    return `Dear ${landlordName},
 
 Happy Wedding Anniversary! 💍❤️
 

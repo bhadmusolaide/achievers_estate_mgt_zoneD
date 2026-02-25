@@ -3930,17 +3930,62 @@ body {
 
 .financial-overview-page .payment-types-cell {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.financial-overview-page .payment-type-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: help;
 }
 
 .financial-overview-page .payment-type-chip {
-  font-size: 0.7rem;
-  padding: 0.125rem 0.5rem;
+  font-size: 0.65rem;
+  padding: 0.125rem 0.4rem;
   background: var(--gray-100);
   border-radius: var(--radius-full);
   color: var(--gray-700);
   text-transform: capitalize;
+  min-width: 60px;
+  text-align: center;
+}
+
+.financial-overview-page .payment-type-chip.paid {
+  background: var(--success-light, #d1fae5);
+  color: var(--success, #059669);
+}
+
+.financial-overview-page .payment-type-chip.partial {
+  background: var(--warning-light, #fef3c7);
+  color: var(--warning, #d97706);
+}
+
+.financial-overview-page .payment-type-chip.pending {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.financial-overview-page .payment-type-chip.other {
+  background: var(--info-light, #dbeafe);
+  color: var(--info, #2563eb);
+  font-style: italic;
+}
+
+.financial-overview-page .payment-type-amounts {
+  font-size: 0.65rem;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+.financial-overview-page .unassigned-payments {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px dashed var(--gray-200);
 }
 
 .financial-overview-page .no-types {
