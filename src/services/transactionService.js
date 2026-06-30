@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { activityLogService, ACTION_TYPES, ENTITY_TYPES } from './activityLogService';
 
-// Update ACTION_TYPES to include transaction actions
+// Action types for transaction activity logging (mirrors the values written by the RPCs)
 export const TRANSACTION_ACTION_TYPES = {
   TRANSACTION_CREATED: 'transaction_created',
   TRANSACTION_APPROVED: 'transaction_approved',
@@ -144,183 +143,62 @@ export const transactionService = {
   },
 
   /**
-   * Create a new transaction
+   * Create a new transaction.
+   * Delegates to the create_transaction RPC so the insert, approval decision,
+   * balance recompute, and activity log happen atomically and the actor is
+   * derived server-side from auth.uid().
    */
-  async create(transaction, adminId) {
-    // Check if approval is required
-    const needsApproval = await this.requiresApproval(
-      transaction.transaction_type,
-      transaction.amount
-    );
-
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert([{
-        ...transaction,
-        created_by: adminId,
-        status: needsApproval ? 'pending' : 'approved',
-        requires_approval: needsApproval,
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // If auto-approved, update balance immediately
-    if (!needsApproval) {
-      await this.updateAccountBalance(data.id, data.transaction_type, data.amount);
-    }
-
-    // Log activity
-    await activityLogService.log({
-      adminId,
-      actionType: TRANSACTION_ACTION_TYPES.TRANSACTION_CREATED,
-      entityType: 'transaction',
-      entityId: data.id,
-      metadata: {
-        transaction_type: transaction.transaction_type,
-        amount: transaction.amount,
-        category_id: transaction.category_id,
-        requires_approval: needsApproval,
-      },
+  async create(transaction) {
+    const { data, error } = await supabase.rpc('create_transaction', {
+      p_transaction_type: transaction.transaction_type,
+      p_category_id: transaction.category_id,
+      p_amount: transaction.amount,
+      p_description: transaction.description ?? null,
+      p_reference: transaction.reference ?? null,
+      p_landlord_id: transaction.landlord_id ?? null,
+      p_payment_id: transaction.payment_id ?? null,
     });
 
+    if (error) throw error;
     return data;
   },
 
   /**
-   * Approve a pending transaction
+   * Approve a pending transaction.
+   * Delegates to the approve_transaction RPC (role-gated, atomic status change +
+   * balance recompute + activity log).
    */
-  async approve(transactionId, adminId) {
-    // Get transaction first
-    const transaction = await this.getById(transactionId);
-    
-    if (transaction.status !== 'pending') {
-      throw new Error('Transaction is not pending approval');
-    }
-
-    const { data, error } = await supabase
-      .from('transactions')
-      .update({
-        status: 'approved',
-        approved_by: adminId,
-        approved_at: new Date().toISOString(),
-      })
-      .eq('id', transactionId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Update account balance
-    await this.updateAccountBalance(
-      data.id,
-      data.transaction_type,
-      data.amount
-    );
-
-    // Log activity
-    await activityLogService.log({
-      adminId,
-      actionType: TRANSACTION_ACTION_TYPES.TRANSACTION_APPROVED,
-      entityType: 'transaction',
-      entityId: data.id,
-      metadata: {
-        transaction_type: data.transaction_type,
-        amount: data.amount,
-      },
+  async approve(transactionId) {
+    const { data, error } = await supabase.rpc('approve_transaction', {
+      p_transaction_id: transactionId,
     });
 
+    if (error) throw error;
     return data;
   },
 
   /**
-   * Reject a pending transaction
+   * Reject a pending transaction.
+   * Delegates to the reject_transaction RPC (role-gated, atomic status change +
+   * activity log).
    */
-  async reject(transactionId, adminId, reason = '') {
-    const transaction = await this.getById(transactionId);
-    
-    if (transaction.status !== 'pending') {
-      throw new Error('Transaction is not pending approval');
-    }
-
-    const { data, error } = await supabase
-      .from('transactions')
-      .update({
-        status: 'rejected',
-        rejected_by: adminId,
-        rejected_at: new Date().toISOString(),
-        rejection_reason: reason,
-      })
-      .eq('id', transactionId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Log activity
-    await activityLogService.log({
-      adminId,
-      actionType: TRANSACTION_ACTION_TYPES.TRANSACTION_REJECTED,
-      entityType: 'transaction',
-      entityId: data.id,
-      metadata: {
-        transaction_type: data.transaction_type,
-        amount: data.amount,
-        rejection_reason: reason,
-      },
+  async reject(transactionId, reason = '') {
+    const { data, error } = await supabase.rpc('reject_transaction', {
+      p_transaction_id: transactionId,
+      p_reason: reason,
     });
 
+    if (error) throw error;
     return data;
   },
 
   /**
-   * Update account balance after transaction
+   * Recompute the account balance from approved transactions.
+   * Delegates to a Postgres RPC so the balance is derived atomically
+   * (single source of truth) instead of a client-side read-then-write.
    */
-  async updateAccountBalance(transactionId, transactionType, amount) {
-    // Get current balance
-    const { data: currentBalance, error: fetchError } = await supabase
-      .from('account_balance')
-      .select('*')
-      .eq('id', '00000000-0000-0000-0000-000000000001')
-      .single();
-
-    if (fetchError) {
-      // If no balance record exists, create one
-      const { data: newBalance, error: createError } = await supabase
-        .from('account_balance')
-        .insert([{
-          id: '00000000-0000-0000-0000-000000000001',
-          account_name: 'Main Account',
-          balance: 0,
-          last_transaction_id: transactionId,
-        }])
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return newBalance;
-    }
-
-    // Calculate new balance
-    const currentBalanceValue = parseFloat(currentBalance.balance || 0);
-    const transactionAmount = parseFloat(amount);
-    const newBalance = transactionType === 'credit'
-      ? currentBalanceValue + transactionAmount
-      : currentBalanceValue - transactionAmount;
-
-    // Update balance
-    const { data, error } = await supabase
-      .from('account_balance')
-      .update({
-        balance: newBalance,
-        last_transaction_id: transactionId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', '00000000-0000-0000-0000-000000000001')
-      .select()
-      .single();
-
+  async updateAccountBalance() {
+    const { data, error } = await supabase.rpc('recompute_account_balance');
     if (error) throw error;
     return data;
   },

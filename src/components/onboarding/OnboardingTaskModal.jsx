@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, MapPin, CheckCircle, Circle, Loader2, Save, AlertCircle, PlusCircle } from 'lucide-react';
+import { User, MapPin, CheckCircle, Circle, Loader2, Save, AlertCircle, PlusCircle, ListChecks } from 'lucide-react';
 import Modal from '../common/Modal';
 import { onboardingService } from '../../services/onboardingService';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ const OnboardingTaskModal = ({ landlord, onClose }) => {
   const [noteText, setNoteText] = useState('');
   const [error, setError] = useState(null);
   const [initializing, setInitializing] = useState(false);
+  const [completingAll, setCompletingAll] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -61,6 +62,28 @@ const OnboardingTaskModal = ({ landlord, onClose }) => {
       alert('Failed to update task. Please try again.');
     } finally {
       setSaving(null);
+    }
+  };
+
+  const handleMarkAllComplete = async () => {
+    const remaining = tasks.filter((t) => !t.completed).length;
+    if (remaining === 0) return;
+
+    if (!confirm(
+      `Mark all ${remaining} remaining task(s) as complete? This will complete onboarding for ${landlord.full_name}.`
+    )) {
+      return;
+    }
+
+    setCompletingAll(true);
+    try {
+      await onboardingService.completeAllTasks(landlord.id, adminProfile.id);
+      await loadTasks();
+    } catch (err) {
+      console.error('Error marking all tasks complete:', err);
+      alert('Failed to mark all tasks complete. Please try again.');
+    } finally {
+      setCompletingAll(false);
     }
   };
 

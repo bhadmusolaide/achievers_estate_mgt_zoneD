@@ -8,6 +8,8 @@
     "build": "vite build",
     "build:analyze": "vite build --mode analyze",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview",
     "production": "npm run build && npm run preview"
   },
