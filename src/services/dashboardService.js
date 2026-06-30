@@ -11,57 +11,69 @@ export const dashboardService = {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get total landlords count
-    const { count: totalLandlords } = await supabase
-      .from('landlords')
-      .select('*', { count: 'exact', head: true });
+    // These metrics are independent of each other, so fetch them in parallel
+    // rather than sequentially to keep the dashboard snappy. The two calls with
+    // fallbacks are wrapped so a failure returns a default instead of rejecting
+    // the whole batch (preserving the previous per-metric error handling).
+    const [
+      totalLandlordsResult,
+      activeLandlordsResult,
+      confirmedPaymentsResult,
+      totalOutstanding,
+      receiptsSentResult,
+      accountBalance,
+    ] = await Promise.all([
+      // Total landlords count
+      supabase
+        .from('landlords')
+        .select('*', { count: 'exact', head: true }),
+      // Active landlords count
+      supabase
+        .from('landlords')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active'),
+      // Confirmed payments total
+      supabase
+        .from('payments')
+        .select('amount')
+        .eq('status', 'confirmed'),
+      // Total outstanding amount from financial overview
+      (async () => {
+        try {
+          const totals = await financialOverviewService.getAggregateTotals();
+          return totals.totalOutstanding || 0;
+        } catch (error) {
+          console.warn('Could not fetch outstanding payments:', error);
+          return 0;
+        }
+      })(),
+      // Receipts sent today
+      supabase
+        .from('receipts')
+        .select('*', { count: 'exact', head: true })
+        .gte('generated_at', today.toISOString()),
+      // Account balance
+      (async () => {
+        try {
+          const balance = await transactionService.getAccountBalance();
+          return parseFloat(balance.balance || 0);
+        } catch (error) {
+          console.warn('Could not fetch account balance:', error);
+          return 0;
+        }
+      })(),
+    ]);
 
-    // Get active landlords count
-    const { count: activeLandlords } = await supabase
-      .from('landlords')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'active');
-
-    // Get confirmed payments total
-    const { data: confirmedPayments } = await supabase
-      .from('payments')
-      .select('amount')
-      .eq('status', 'confirmed');
-
-    const totalConfirmedAmount = confirmedPayments?.reduce(
+    const totalConfirmedAmount = confirmedPaymentsResult.data?.reduce(
       (sum, p) => sum + parseFloat(p.amount), 0
     ) || 0;
 
-    // Get total outstanding amount from financial overview
-    let totalOutstanding = 0;
-    try {
-      const totals = await financialOverviewService.getAggregateTotals();
-      totalOutstanding = totals.totalOutstanding || 0;
-    } catch (error) {
-      console.warn('Could not fetch outstanding payments:', error);
-    }
-
-    // Get receipts sent today
-    const { count: receiptsSentToday } = await supabase
-      .from('receipts')
-      .select('*', { count: 'exact', head: true })
-      .gte('generated_at', today.toISOString());
-
-    // Get account balance
-    let accountBalance = 0;
-    try {
-      const balance = await transactionService.getAccountBalance();
-      accountBalance = parseFloat(balance.balance || 0);
-    } catch (error) {
-      console.warn('Could not fetch account balance:', error);
-    }
-
     return {
-      totalLandlords: totalLandlords || 0,
-      activeLandlords: activeLandlords || 0,
+      totalLandlords: totalLandlordsResult.count || 0,
+      activeLandlords: activeLandlordsResult.count || 0,
       totalConfirmedAmount,
       pendingPayments: totalOutstanding,
-      receiptsSentToday: receiptsSentToday || 0,
+      receiptsSentToday: receiptsSentResult.count || 0,
       accountBalance,
     };
   },
@@ -167,8 +179,6 @@ export const dashboardService = {
           .eq('celebrate_opt_in', true);
 
         if (landlords && landlords.length > 0) {
-          const eligible = landlords.filter((ll) => ll.onboarding_status === 'active' || ll.onboarding_status === 'pending' || ll.onboarding_status == null);
-          
           // Get computed upcoming events within 3 days
           const computedBirthdays = await celebrationService.getByType('birthday');
           const computedAnniversaries = await celebrationService.getByType('anniversary');

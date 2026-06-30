@@ -109,7 +109,7 @@ const TransactionsPage = () => {
   const handleSubmit = async (formData) => {
     setSaving(true);
     try {
-      await transactionService.create(formData, adminProfile.id);
+      await transactionService.create(formData);
       setShowModal(false);
       loadData();
     } catch (error) {
@@ -129,7 +129,7 @@ const TransactionsPage = () => {
     if (!transactionToApprove) return;
     setSaving(true);
     try {
-      await transactionService.approve(transactionToApprove.id, adminProfile.id);
+      await transactionService.approve(transactionToApprove.id);
       setShowApproveModal(false);
       setTransactionToApprove(null);
       loadData();
@@ -151,7 +151,7 @@ const TransactionsPage = () => {
     if (!transactionToApprove) return;
     setSaving(true);
     try {
-      await transactionService.reject(transactionToApprove.id, adminProfile.id, rejectionReason);
+      await transactionService.reject(transactionToApprove.id, rejectionReason);
       setShowRejectModal(false);
       setTransactionToApprove(null);
       setRejectionReason('');

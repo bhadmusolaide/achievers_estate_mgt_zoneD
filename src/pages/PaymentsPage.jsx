@@ -83,7 +83,7 @@ const PaymentsPage = () => {
   const handleConfirm = async (paymentId) => {
     setSaving(true);
     try {
-      await paymentService.confirm(paymentId, adminProfile.id);
+      await paymentService.confirm(paymentId);
       // Generate receipt
       await receiptService.create(paymentId);
       setShowModal(false);

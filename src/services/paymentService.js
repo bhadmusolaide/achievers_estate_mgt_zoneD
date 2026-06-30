@@ -1,8 +1,11 @@
 import { supabase } from '../lib/supabase';
 import { generateReferenceCode } from '../utils/helpers';
 import { activityLogService, ACTION_TYPES, ENTITY_TYPES } from './activityLogService';
-import { transactionService } from './transactionService';
 import toastService from './toastService';
+
+// Minimum number of completed onboarding tasks required before a landlord
+// becomes eligible for payments (even if onboarding is not fully complete).
+export const MIN_ONBOARDING_TASKS_FOR_PAYMENT = 4;
 
 export const paymentService = {
   /**
@@ -62,20 +65,30 @@ export const paymentService = {
   },
 
   /**
-   * Check if landlord is eligible for payments (onboarding complete)
+   * Check if landlord is eligible for payments.
+   * A landlord is eligible if onboarding is already complete (active), or if at
+   * least MIN_ONBOARDING_TASKS_FOR_PAYMENT onboarding tasks have been completed.
    */
   async checkLandlordEligibility(landlordId) {
     const { data, error } = await supabase
       .from('landlords')
-      .select('id, full_name, onboarding_status')
+      .select('id, full_name, onboarding_status, onboarding_tasks (completed)')
       .eq('id', landlordId)
       .single();
 
     if (error) throw error;
 
-    if (data.onboarding_status === 'pending') {
+    if (data.onboarding_status !== 'pending') {
+      return true;
+    }
+
+    const completedCount = (data.onboarding_tasks || []).filter(
+      (task) => task.completed
+    ).length;
+
+    if (completedCount < MIN_ONBOARDING_TASKS_FOR_PAYMENT) {
       throw new Error(
-        `Cannot record payment for ${data.full_name}. Landlord onboarding is not complete.`
+        `Cannot record payment for ${data.full_name}. At least ${MIN_ONBOARDING_TASKS_FOR_PAYMENT} onboarding tasks must be completed (${completedCount} completed so far).`
       );
     }
 
@@ -152,89 +165,23 @@ export const paymentService = {
   },
 
   /**
-   * Confirm a payment
+   * Confirm a payment.
+   * Delegates to the `confirm_payment` Postgres RPC so the payment update,
+   * matching credit transaction, account-balance recompute, and activity-log
+   * trail all commit (or roll back) as a single database transaction.
    */
-  async confirm(id, adminId) {
+  async confirm(id) {
     try {
-      // Get payment details first
-      const { data: paymentData, error: fetchError } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          landlords (id, title, full_name),
-          payment_types (name)
-        `)
-        .eq('id', id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update payment status
-      const { data, error } = await supabase
-        .from('payments')
-        .update({
-          status: 'confirmed',
-          confirmed_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .eq('status', 'pending')
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('confirm_payment', {
+        p_payment_id: id,
+      });
 
       if (error) throw error;
 
-      // Auto-create credit transaction for confirmed payment
-      try {
-        // Get rent_income category
-        const categories = await transactionService.getCategories('credit');
-        const rentIncomeCategory = categories.find(c => c.name === 'rent_income');
-        
-        if (!rentIncomeCategory) {
-          console.warn('rent_income category not found. Transaction not created for payment:', data.id);
-        } else if (!adminId) {
-          console.warn('adminId is required to create transaction. Transaction not created for payment:', data.id);
-        } else {
-          const transaction = await transactionService.create({
-            transaction_type: 'credit',
-            category_id: rentIncomeCategory.id,
-            amount: parseFloat(data.amount),
-            description: `Payment from ${paymentData.landlords?.full_name || 'Landlord'} - ${paymentData.payment_types?.name || 'Payment'}`,
-            reference: data.reference_code,
-            landlord_id: data.landlord_id,
-            payment_id: data.id,
-          }, adminId);
-
-          // Auto-approve the transaction if it's pending (payment-based transactions should always be approved)
-          if (transaction.status === 'pending') {
-            await transactionService.approve(transaction.id, adminId);
-          }
-        }
-      } catch (transactionError) {
-        // Log error but don't fail payment confirmation
-        console.error('Error creating transaction for payment:', transactionError);
-        console.error('Payment ID:', data.id, 'Admin ID:', adminId);
-      }
-
-      // Log the activity
-      if (adminId) {
-        await activityLogService.log({
-          adminId,
-          actionType: ACTION_TYPES.PAYMENT_CONFIRMED,
-          entityType: ENTITY_TYPES.PAYMENT,
-          entityId: data.id,
-          metadata: {
-            amount: data.amount,
-            reference_code: data.reference_code,
-          },
-        });
-      }
-
-      // Show success toast
       toastService.success(`Payment confirmed successfully (Ref: ${data.reference_code})`);
 
       return data;
     } catch (error) {
-      // Show error toast
       toastService.error(`Failed to confirm payment: ${error.message}`);
       throw error;
     }

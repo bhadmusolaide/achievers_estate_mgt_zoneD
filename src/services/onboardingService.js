@@ -8,6 +8,10 @@ export const STANDARD_ONBOARDING_TASKS = [
   { task_key: 'confirm_occupancy_type', task_label: 'Confirm Occupancy Type', required: true },
   { task_key: 'add_annual_charge', task_label: 'Add Annual Charge', required: true },
   { task_key: 'join_whatsapp_group', task_label: 'Join WhatsApp Group', required: true },
+  { task_key: 'assigned_house_number', task_label: 'Assigned House Number', required: true },
+  { task_key: 'participate_central_meeting', task_label: 'Participate at the Central Meeting', required: true },
+  { task_key: 'participate_zonal_meeting', task_label: 'Participate at Zonal Meeting', required: true },
+  { task_key: 'paid_electricity_connection_fee', task_label: 'Paid Electricity Connection Fee', required: true },
 ];
 
 export const onboardingService = {
@@ -140,6 +144,57 @@ export const onboardingService = {
     await this.checkAndUpdateOnboardingStatus(task.landlord_id, adminId);
 
     return task;
+  },
+
+  /**
+   * Mark all incomplete onboarding tasks for a landlord as completed in one action
+   */
+  async completeAllTasks(landlordId, adminId) {
+    // Get all incomplete tasks for this landlord
+    const { data: tasks, error } = await supabase
+      .from('onboarding_tasks')
+      .select('id')
+      .eq('landlord_id', landlordId)
+      .eq('completed', false);
+
+    if (error) throw error;
+
+    if (!tasks || tasks.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // Mark all incomplete tasks as completed
+    const { error: completeError } = await supabase
+      .from('onboarding_tasks')
+      .update({
+        completed: true,
+        completed_at: new Date().toISOString(),
+        completed_by: adminId,
+      })
+      .in('id', tasks.map((t) => t.id));
+
+    if (completeError) throw completeError;
+
+    // Log to legacy onboarding_activity_log
+    await this.logActivity(adminId, landlordId, 'onboarding_task_completed', null);
+
+    // Log to global activity_logs
+    await activityLogService.log({
+      adminId,
+      actionType: ACTION_TYPES.ONBOARDING_TASK_COMPLETED,
+      entityType: ENTITY_TYPES.LANDLORD,
+      entityId: landlordId,
+      metadata: {
+        landlord_id: landlordId,
+        all_tasks: 'true',
+        count: String(tasks.length),
+      },
+    });
+
+    // Check if all required tasks are complete and update landlord status
+    await this.checkAndUpdateOnboardingStatus(landlordId, adminId);
+
+    return { success: true, count: tasks.length };
   },
 
   /**

@@ -14,52 +14,60 @@ export const AuthProvider = ({ children }) => {
   const initialLoadDone = useRef(false);
 
   useEffect(() => {
-    // Listen for auth changes - this handles both initial session and subsequent changes
+    // Listen for auth changes - this handles both initial session and subsequent changes.
+    // IMPORTANT: This callback must stay synchronous and must not await Supabase calls
+    // directly. It runs inside the auth client's exclusive (Navigator LockManager) lock,
+    // and awaiting another Supabase call here deadlocks every subsequent query - making
+    // pages hang on loading until the 10s lock timeout. We defer all work (including the
+    // profile fetch) with setTimeout so the lock is released first. setTimeout callbacks
+    // run in FIFO order, so event ordering and the initialLoadDone flag are preserved.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
 
-        // Handle initial session load
-        if (event === 'INITIAL_SESSION') {
-          if (session?.user) {
-            setUser(session.user);
-            await fetchAdminProfile(session.user.id, true);
-          } else {
-            setUser(null);
-            setAdminProfile(null);
-            setLoading(false);
-          }
-          initialLoadDone.current = true;
-          return;
-        }
-
-        // Skip if initial load hasn't happened yet (prevents race conditions)
-        if (!initialLoadDone.current) {
-          return;
-        }
-
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_INVALIDATED' || !session) {
-          // Clear all auth state
-          setUser(null);
-          setAdminProfile(null);
-          setProfileError(null);
-          setLoading(false);
-        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            try {
-              await fetchAdminProfile(session.user.id, false);
-            } catch (error) {
-              console.error('Error fetching profile after auth change:', error);
-              setProfileError('Failed to load user profile. Please log in again.');
-            } finally {
-              // Always set loading to false after sign-in completes
+        setTimeout(async () => {
+          // Handle initial session load
+          if (event === 'INITIAL_SESSION') {
+            if (session?.user) {
+              setUser(session.user);
+              await fetchAdminProfile(session.user.id, true);
+            } else {
+              setUser(null);
+              setAdminProfile(null);
               setLoading(false);
             }
-          } else {
-            setLoading(false);
+            initialLoadDone.current = true;
+            return;
           }
-        }
+
+          // Skip if initial load hasn't happened yet (prevents race conditions)
+          if (!initialLoadDone.current) {
+            return;
+          }
+
+          if (event === 'SIGNED_OUT' || event === 'TOKEN_INVALIDATED' || !session) {
+            // Clear all auth state
+            setUser(null);
+            setAdminProfile(null);
+            setProfileError(null);
+            setLoading(false);
+          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            setUser(session?.user ?? null);
+            if (session?.user) {
+              try {
+                await fetchAdminProfile(session.user.id, false);
+              } catch (error) {
+                console.error('Error fetching profile after auth change:', error);
+                setProfileError('Failed to load user profile. Please log in again.');
+              } finally {
+                // Always set loading to false after sign-in completes
+                setLoading(false);
+              }
+            } else {
+              setLoading(false);
+            }
+          }
+        }, 0);
       }
     );
 

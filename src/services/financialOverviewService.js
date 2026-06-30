@@ -440,11 +440,11 @@ export const financialOverviewService = {
               reference: payment.reference_code,
               landlord_id: payment.landlord_id,
               payment_id: payment.id,
-            }, adminId);
+            });
 
             // Auto-approve the transaction
             if (transaction.status === 'pending') {
-              await transactionService.approve(transaction.id, adminId);
+              await transactionService.approve(transaction.id);
             }
           }
         }
