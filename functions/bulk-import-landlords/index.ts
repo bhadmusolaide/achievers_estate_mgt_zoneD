@@ -7,15 +7,19 @@ const corsHeaders = {
 }
 
 interface LandlordData {
+  title?: string
   full_name: string
   phone: string
   email?: string
-  house_address?: string
-  zone?: string
+  house_number?: string
+  lane_number?: string
+  road?: string
   occupancy_type: 'owner' | 'tenant'
+  occupation?: string
   date_of_birth?: string
   wedding_anniversary?: string
   celebrate_opt_in?: boolean | string
+  notes?: string
   onboarding_status?: string
   status?: string
 }
@@ -249,16 +253,34 @@ function validateLandlord(landlord: LandlordData): ValidationResult {
     normalized.email = undefined
   }
 
-  if (landlord.house_address && landlord.house_address.trim() !== '') {
-    normalized.house_address = landlord.house_address.trim()
+  if (landlord.house_number && landlord.house_number.trim() !== '') {
+    normalized.house_number = landlord.house_number.trim()
   } else {
-    normalized.house_address = undefined
+    normalized.house_number = undefined
   }
 
-  if (landlord.zone && landlord.zone.trim() !== '') {
-    normalized.zone = landlord.zone.trim()
+  if (landlord.lane_number && landlord.lane_number.trim() !== '') {
+    normalized.lane_number = landlord.lane_number.trim()
   } else {
-    normalized.zone = 'Zone D'
+    normalized.lane_number = undefined
+  }
+
+  if (landlord.road && landlord.road.trim() !== '') {
+    normalized.road = landlord.road.trim()
+  } else {
+    normalized.road = undefined
+  }
+
+  if (landlord.occupation && landlord.occupation.trim() !== '') {
+    normalized.occupation = landlord.occupation.trim()
+  } else {
+    normalized.occupation = undefined
+  }
+
+  if (landlord.notes && landlord.notes.trim() !== '') {
+    normalized.notes = landlord.notes.trim()
+  } else {
+    normalized.notes = undefined
   }
 
   // Date validations

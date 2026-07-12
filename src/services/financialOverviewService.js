@@ -21,9 +21,9 @@ export const financialOverviewService = {
         title,
         full_name,
         phone,
-        house_address,
+        house_number,
+        lane_number,
         road,
-        zone,
         status
       `, { count: 'exact' })
       .eq('status', 'active');
@@ -41,12 +41,9 @@ export const financialOverviewService = {
     }
 
     // Apply filters
-    if (filters.zone) {
-      query = query.eq('zone', filters.zone);
-    }
     if (filters.search) {
       query = query.or(
-        `full_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,house_address.ilike.%${filters.search}%,road.ilike.%${filters.search}%`
+        `full_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,house_number.ilike.%${filters.search}%,lane_number.ilike.%${filters.search}%,road.ilike.%${filters.search}%`
       );
     }
     if (filters.road) {
@@ -632,21 +629,6 @@ export const financialOverviewService = {
 
     if (error) throw error;
     return data;
-  },
-
-  /**
-   * Get distinct zones for filter dropdown
-   */
-  async getZones() {
-    const { data, error } = await supabase
-      .from('landlords')
-      .select('zone')
-      .eq('status', 'active');
-
-    if (error) throw error;
-
-    const uniqueZones = [...new Set(data.map(d => d.zone).filter(Boolean))];
-    return uniqueZones.sort();
   },
 
   /**

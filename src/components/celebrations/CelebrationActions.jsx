@@ -3,7 +3,7 @@ import { CheckCircle, Send, XCircle, Loader2, Mail, MessageSquare, MapPin } from
 import { celebrationService } from '../../services/celebrationService';
 import { celebrationMessagingService } from '../../services/celebrationMessagingService';
 import { useAuth } from '../../context/AuthContext';
-import { formatLandlordName } from '../../utils/helpers';
+import { formatLandlordName, formatLandlordAddress } from '../../utils/helpers';
 
 const CelebrationActions = ({ celebration, onComplete }) => {
   const { adminProfile } = useAuth();
@@ -98,7 +98,7 @@ const CelebrationActions = ({ celebration, onComplete }) => {
         </p>
         <p className="address-info">
           <MapPin size={14} />
-          {landlord?.house_address || 'N/A'}
+          {formatLandlordAddress(landlord) || 'N/A'}
           {landlord?.road && ` (${landlord?.road})`}
         </p>
         <p className="days-info">

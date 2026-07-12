@@ -105,8 +105,20 @@ const LandlordsPage = () => {
     },
     { key: 'email', header: 'Email', sortable: true },
     { key: 'phone', header: 'Phone', sortable: true },
-    { key: 'house_address', header: 'Address', sortable: true },
+    { key: 'house_number', header: 'House #', sortable: true },
+    { key: 'lane_number', header: 'Lane', sortable: true },
     { key: 'road', header: 'Road', sortable: true },
+    { key: 'occupation', header: 'Occupation', sortable: true },
+    {
+      key: 'notes',
+      header: 'Notes',
+      sortable: false,
+      render: (row) => row.notes ? (
+        <span className="notes-cell" title={row.notes}>
+          {row.notes.length > 50 ? row.notes.substring(0, 50) + '...' : row.notes}
+        </span>
+      ) : '-'
+    },
     {
       key: 'occupancy_type',
       header: 'Type',
@@ -215,6 +227,8 @@ const LandlordsPage = () => {
             }
             setSortConfig({ key, direction });
           }}
+          customizable
+          tableId="landlords"
         />
       </div>
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={modalMode === 'add' ? 'Add Landlord' : modalMode === 'edit' ? 'Edit Landlord' : 'Landlord Profile'} size="medium">

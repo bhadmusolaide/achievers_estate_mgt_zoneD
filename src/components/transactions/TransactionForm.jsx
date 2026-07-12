@@ -3,7 +3,7 @@ import { Loader2, Save, X, AlertCircle, Info } from 'lucide-react';
 import { transactionService } from '../../services/transactionService';
 import { landlordService } from '../../services/landlordService';
 import { paymentService } from '../../services/paymentService';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, formatLandlordAddress } from '../../utils/helpers';
 
 const TransactionForm = ({ onSubmit, onCancel, loading, initialData = null }) => {
   const [formData, setFormData] = useState({
@@ -259,7 +259,7 @@ const TransactionForm = ({ onSubmit, onCancel, loading, initialData = null }) =>
           <option value="">None</option>
           {landlords.map((l) => (
             <option key={l.id} value={l.id}>
-              {l.full_name} - {l.house_address}
+              {l.full_name} - {formatLandlordAddress(l)}
             </option>
           ))}
         </select>

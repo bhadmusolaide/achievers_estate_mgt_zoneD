@@ -16,7 +16,7 @@ export const paymentService = {
       .from('payments')
       .select(`
         *,
-        landlords (id, title, full_name, phone, house_address),
+        landlords (id, title, full_name, phone, house_address, house_number, lane_number),
         payment_types (id, name),
         admin_profiles:logged_by (full_name),
         receipts (*)

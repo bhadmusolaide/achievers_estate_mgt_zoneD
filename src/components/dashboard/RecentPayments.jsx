@@ -1,4 +1,4 @@
-import { formatCurrency, formatDateTime, getStatusClass, formatLandlordName } from '../../utils/helpers';
+import { formatCurrency, formatDateTime, getStatusClass, formatLandlordName, formatLandlordAddress } from '../../utils/helpers';
 
 const RecentPayments = ({ payments, loading }) => {
   if (loading) {
@@ -35,7 +35,7 @@ const RecentPayments = ({ payments, loading }) => {
           {payments.map((payment) => (
             <tr key={payment.id}>
               <td>{formatLandlordName(payment.landlords)}</td>
-              <td>{payment.landlords?.house_address}</td>
+              <td>{formatLandlordAddress(payment.landlords)}</td>
               <td>{payment.landlords?.road || '-'}</td>
               <td className="capitalize">{payment.payment_types?.name}</td>
               <td>{formatCurrency(payment.amount)}</td>

@@ -15,18 +15,20 @@ CREATE TABLE admin_profiles (
 -- Landlords table
 CREATE TABLE landlords (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title VARCHAR(20),
+    title VARCHAR(20) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
+    house_number VARCHAR(100),
+    lane_number VARCHAR(100),
+    road VARCHAR(50),
+    occupancy_type VARCHAR(20) NOT NULL CHECK (occupancy_type IN ('owner', 'tenant')),
+    occupation VARCHAR(100),
+    date_of_birth VARCHAR(5),
     phone VARCHAR(20) NOT NULL,
     email VARCHAR(255),
-    house_address VARCHAR(255) NOT NULL,
-    road VARCHAR(50),
-    zone VARCHAR(50) DEFAULT 'Zone D',
-    occupancy_type VARCHAR(20) NOT NULL CHECK (occupancy_type IN ('owner', 'tenant')),
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
-    date_of_birth DATE,
-    wedding_anniversary DATE,
+    wedding_anniversary VARCHAR(5),
     celebrate_opt_in BOOLEAN DEFAULT FALSE,
+    notes TEXT,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
     onboarding_status VARCHAR(20) DEFAULT 'pending' CHECK (onboarding_status IN ('pending', 'active')),
     onboarding_started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     onboarding_completed_at TIMESTAMP WITH TIME ZONE,
@@ -35,9 +37,10 @@ CREATE TABLE landlords (
 
 -- Indexes for landlords
 CREATE INDEX idx_landlords_phone ON landlords(phone);
-CREATE INDEX idx_landlords_house_address ON landlords(house_address);
+CREATE INDEX idx_landlords_house_number ON landlords(house_number);
+CREATE INDEX idx_landlords_lane_number ON landlords(lane_number);
 CREATE INDEX idx_landlords_road ON landlords(road);
-CREATE INDEX idx_landlords_zone ON landlords(zone);
+CREATE INDEX idx_landlords_occupation ON landlords(occupation);
 CREATE INDEX idx_landlords_celebrate_opt_in ON landlords(celebrate_opt_in) WHERE celebrate_opt_in = TRUE;
 CREATE INDEX idx_landlords_onboarding_status ON landlords(onboarding_status);
 

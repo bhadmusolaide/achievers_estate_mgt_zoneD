@@ -675,6 +675,101 @@ body {
   gap: 0.5rem;
 }
 
+/* Column Selector */
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+.column-selector {
+  position: relative;
+}
+
+.column-selector-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.column-selector-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  padding: 0.5rem 0;
+}
+
+.column-selector-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  user-select: none;
+}
+
+.column-selector-all:hover {
+  background: var(--gray-50);
+}
+
+.column-selector-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 0.25rem 0;
+}
+
+.column-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--gray-700);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.column-selector-item:hover {
+  background: var(--gray-50);
+}
+
+.column-selector-all input[type="checkbox"],
+.column-selector-item input[type="checkbox"] {
+  display: none;
+}
+
+.column-selector-all .check-icon,
+.column-selector-item .check-icon {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 3px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all 0.15s;
+}
+
+.column-selector-all input[type="checkbox"]:checked + .check-icon,
+.column-selector-item input[type="checkbox"]:checked + .check-icon {
+  opacity: 1;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
 /* Badges */
 .badge {
   display: inline-flex;

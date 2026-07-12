@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Save, X, AlertCircle } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
 import { landlordService } from '../../services/landlordService';
-import { getMonthName } from '../../utils/helpers';
+import { getMonthName, formatLandlordAddress } from '../../utils/helpers';
 
 const PaymentForm = ({ onSubmit, onCancel, loading }) => {
   const [formData, setFormData] = useState({
@@ -124,7 +124,7 @@ const PaymentForm = ({ onSubmit, onCancel, loading }) => {
           <option value="">Select Landlord</option>
           {landlords.map((l) => (
             <option key={l.id} value={l.id}>
-              {l.full_name} - {l.house_address}{l.road ? ` (${l.road})` : ''}
+              {l.full_name} - {formatLandlordAddress(l)}{l.road ? ` (${l.road})` : ''}
             </option>
           ))}
         </select>

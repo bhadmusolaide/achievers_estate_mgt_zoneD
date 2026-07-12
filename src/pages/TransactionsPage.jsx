@@ -434,6 +434,8 @@ const TransactionsPage = () => {
           loading={loading}
           emptyMessage="No transactions found"
           pagination={pagination}
+          customizable
+          tableId="transactions"
         />
       </div>
 

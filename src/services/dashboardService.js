@@ -86,7 +86,7 @@ export const dashboardService = {
       .from('payments')
       .select(`
         *,
-        landlords (title, full_name, house_address, road),
+        landlords (title, full_name, house_address, house_number, lane_number, road),
         payment_types (name)
       `)
       .order('created_at', { ascending: false })
@@ -158,8 +158,9 @@ export const dashboardService = {
             phone,
             email,
             house_address,
-            road,
-            zone
+            house_number,
+            lane_number,
+            road
           )
         `)
         .in('status', ['pending', 'approved'])
@@ -174,7 +175,7 @@ export const dashboardService = {
       if (!queuedCelebrations || queuedCelebrations.length === 0) {
         const { data: landlords } = await supabase
           .from('landlords')
-          .select('id, title, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
+          .select('id, title, full_name, phone, email, house_address, house_number, lane_number, road, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
           .eq('status', 'active')
           .eq('celebrate_opt_in', true);
 
