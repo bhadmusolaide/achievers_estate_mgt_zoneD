@@ -71,7 +71,7 @@ export const transactionService = {
       .select(`
         *,
         transaction_categories (*),
-        landlords (id, title, full_name, house_address),
+        landlords (id, title, full_name, house_address, house_number, lane_number),
         payments (id, reference_code, amount),
         admin_profiles:created_by (id, full_name, role),
         approver:approved_by (id, full_name, role),

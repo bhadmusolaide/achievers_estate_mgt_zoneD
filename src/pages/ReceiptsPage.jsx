@@ -6,7 +6,7 @@ import SearchFilter from '../components/common/SearchFilter';
 import Modal from '../components/common/Modal';
 import ReceiptActions from '../components/receipts/ReceiptActions';
 import { receiptService } from '../services/receiptService';
-import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
+import { formatCurrency, formatDateTime, formatLandlordName, formatLandlordAddress } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 
 const ReceiptsPage = () => {
@@ -132,7 +132,7 @@ const ReceiptsPage = () => {
         <div className="page-header">
           <SearchFilter filters={filterOptions} onFilterChange={handleFilterChange} activeFilters={filters} />
         </div>
-        <DataTable columns={columns} data={receipts} loading={loading} emptyMessage="No receipts found" />
+        <DataTable columns={columns} data={receipts} loading={loading} emptyMessage="No receipts found" customizable tableId="receipts" />
       </div>
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Receipt Details" size="medium">
         {selectedReceipt && (
@@ -148,7 +148,7 @@ const ReceiptsPage = () => {
               </div>
               <div className="info-row">
                 <span>Address:</span>
-                <span>{selectedReceipt.payments?.landlords?.house_address}</span>
+                <span>{formatLandlordAddress(selectedReceipt.payments?.landlords)}</span>
               </div>
               <div className="info-row">
                 <span>Amount:</span>

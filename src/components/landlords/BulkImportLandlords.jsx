@@ -16,7 +16,7 @@ const BulkImportLandlords = () => {
   const [step, setStep] = useState('upload');
 
   const displayFileName = selectedFileName || 'No file selected';
-  const requiredColumns = ['full_name', 'phone', 'occupancy_type', 'road'];
+  const requiredColumns = ['title', 'full_name', 'phone', 'occupancy_type'];
 
   const handleFileSelect = (event) => {
     const selectedFile = event.target.files[0];
@@ -131,6 +131,8 @@ const BulkImportLandlords = () => {
         } else {
           normalizedRow.celebrate_opt_in = ['true', '1', 'yes'].includes(val);
         }
+      } else {
+        delete normalizedRow.celebrate_opt_in;
       }
 
       results.push({
@@ -272,6 +274,43 @@ const BulkImportLandlords = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const downloadSampleCSV = () => {
+    const headers = [
+      'title', 'full_name', 'phone', 'occupancy_type',
+      'house_number', 'lane_number', 'road', 'occupation',
+      'date_of_birth', 'email', 'wedding_anniversary', 'celebrate_opt_in', 'notes'
+    ];
+
+    const sampleData = {
+      title: 'Mr',
+      full_name: 'John Doe',
+      phone: '08031234567',
+      occupancy_type: 'owner',
+      house_number: 'House 15',
+      lane_number: 'Lane 2',
+      road: 'Road 3',
+      occupation: 'Business',
+      date_of_birth: '15-06',
+      email: 'johndoe@example.com',
+      wedding_anniversary: '10-12',
+      celebrate_opt_in: 'true',
+      notes: 'Prefers SMS notifications'
+    };
+
+    const csv = Papa.unparse({
+      fields: headers,
+      data: [headers.map(h => sampleData[h])]
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_landlords_import.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const resetImport = () => {
     setSelectedFileName('');
     setParsedData([]);
@@ -309,7 +348,7 @@ const BulkImportLandlords = () => {
             <Upload size={48} className="text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Upload CSV File</h3>
             <p className="text-gray-600 mb-4">
-              Select a CSV file with landlord data. Required columns: full_name, phone, occupancy_type, road
+              Select a CSV file with landlord data. Required columns: title, full_name, phone, occupancy_type
             </p>
             <input
               ref={fileInputRef}
@@ -318,19 +357,28 @@ const BulkImportLandlords = () => {
               onChange={handleFileSelect}
               className="hidden"
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-            >
-              Choose File
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+              >
+                Choose File
+              </button>
+              <button
+                onClick={downloadSampleCSV}
+                className="bg-green-800 text-white px-6 py-2 rounded hover:bg-green-900 flex items-center gap-2"
+              >
+                <Download size={16} />
+                Download Sample CSV
+              </button>
+            </div>
           </div>
 
           <div className="mt-6 bg-gray-50 p-4 rounded">
             <h4 className="font-semibold mb-2">CSV Format Requirements:</h4>
             <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-              <li><strong>Required:</strong> full_name, phone, occupancy_type, road</li>
-              <li><strong>Optional:</strong> title, email, house_address, zone, date_of_birth, wedding_anniversary, celebrate_opt_in</li>
+              <li><strong>Required:</strong> title, full_name, phone, occupancy_type</li>
+              <li><strong>Optional:</strong> house_number, lane_number, road, occupation, date_of_birth, email, wedding_anniversary, celebrate_opt_in, notes</li>
               <li><strong>Phone:</strong> Will be normalized (e.g., 0803xxxxxxx → +234803xxxxxxx)</li>
               <li><strong>Dates:</strong> DD-MM or MM-DD format (e.g., 25-12 or 12-25)</li>
               <li><strong>celebrate_opt_in:</strong> true/false, 1/0, yes/no</li>

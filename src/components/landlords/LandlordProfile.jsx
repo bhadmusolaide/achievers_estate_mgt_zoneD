@@ -37,13 +37,25 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
           </div>
         )}
 
-        <div className="detail-item">
-          <Home size={18} />
-          <div>
-            <label>Address</label>
-            <span>{landlord.house_address}</span>
+        {landlord.house_number && (
+          <div className="detail-item">
+            <Home size={18} />
+            <div>
+              <label>House Number</label>
+              <span>{landlord.house_number}</span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {landlord.lane_number && (
+          <div className="detail-item">
+            <Home size={18} />
+            <div>
+              <label>Lane Number</label>
+              <span>{landlord.lane_number}</span>
+            </div>
+          </div>
+        )}
 
         {landlord.road && (
           <div className="detail-item">
@@ -51,6 +63,16 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
             <div>
               <label>Road</label>
               <span>{landlord.road}</span>
+            </div>
+          </div>
+        )}
+
+        {landlord.occupation && (
+          <div className="detail-item">
+            <User size={18} />
+            <div>
+              <label>Occupation</label>
+              <span>{landlord.occupation}</span>
             </div>
           </div>
         )}
@@ -87,6 +109,15 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
             <div>
               <label>Wedding Anniversary</label>
               <span>{landlord.wedding_anniversary}</span>
+            </div>
+          </div>
+        )}
+
+        {landlord.notes && (
+          <div className="detail-item notes">
+            <div>
+              <label>Notes</label>
+              <span>{landlord.notes}</span>
             </div>
           </div>
         )}

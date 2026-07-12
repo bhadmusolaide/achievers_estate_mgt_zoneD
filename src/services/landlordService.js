@@ -25,12 +25,9 @@ export const landlordService = {
     if (filters.onboarding_status) {
       query = query.eq('onboarding_status', filters.onboarding_status);
     }
-    if (filters.zone) {
-      query = query.eq('zone', filters.zone);
-    }
     if (filters.search) {
       query = query.or(
-        `full_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,house_address.ilike.%${filters.search}%,road.ilike.%${filters.search}%`
+        `full_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,house_number.ilike.%${filters.search}%,lane_number.ilike.%${filters.search}%,road.ilike.%${filters.search}%,occupation.ilike.%${filters.search}%`
       );
     }
     if (filters.road) {
@@ -102,8 +99,8 @@ export const landlordService = {
         entityId: data.id,
         metadata: {
           full_name: data.full_name,
-          house_address: data.house_address,
-          zone: data.zone,
+          house_number: data.house_number,
+          lane_number: data.lane_number,
         },
       });
     }

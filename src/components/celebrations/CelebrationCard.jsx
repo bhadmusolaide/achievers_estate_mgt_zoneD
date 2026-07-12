@@ -3,7 +3,7 @@ import { User, MapPin, Calendar, Clock, CheckCircle, XCircle, Send, Edit2, Phone
 import Modal from '../common/Modal';
 import CelebrationActions from './CelebrationActions';
 import MessageEditor from './MessageEditor';
-import { formatDate, formatLandlordName } from '../../utils/helpers';
+import { formatDate, formatLandlordName, formatLandlordAddress } from '../../utils/helpers';
 
 const CelebrationCard = ({ celebration, onAction }) => {
   const [showActions, setShowActions] = useState(false);
@@ -46,7 +46,7 @@ const CelebrationCard = ({ celebration, onAction }) => {
               <h4>{formatLandlordName(landlord) || 'Unknown'}</h4>
               <span className="address">
                 <MapPin size={14} />
-                {landlord?.house_address || 'N/A'}
+                {formatLandlordAddress(landlord) || 'N/A'}
               </span>
               {landlord?.road && (
                 <div className="road-info">

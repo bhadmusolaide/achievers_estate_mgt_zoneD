@@ -122,6 +122,19 @@ export const TITLE_OPTIONS = [
 ];
 
 /**
+ * Format landlord address from house_number and lane_number
+ * @param {Object} landlord - Landlord object with house_number and lane_number
+ * @returns {string} Formatted address string
+ */
+export const formatLandlordAddress = (landlord) => {
+  if (!landlord) return '';
+  const parts = [];
+  if (landlord.house_number) parts.push(`House ${landlord.house_number}`);
+  if (landlord.lane_number) parts.push(`Lane ${landlord.lane_number}`);
+  return parts.length > 0 ? parts.join(', ') : '';
+};
+
+/**
  * Format landlord display name with title
  * @param {Object} landlord - Landlord object with title and full_name
  * @returns {string} Formatted name with title prefix

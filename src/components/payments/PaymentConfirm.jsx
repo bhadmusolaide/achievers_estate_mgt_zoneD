@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, X, Loader2, AlertTriangle } from 'lucide-react';
-import { formatCurrency, formatDateTime } from '../../utils/helpers';
+import { formatCurrency, formatDateTime, formatLandlordAddress } from '../../utils/helpers';
 
 const PaymentConfirm = ({ payment, onConfirm, onCancel, loading }) => {
   const [confirmed, setConfirmed] = useState(false);
@@ -34,7 +34,7 @@ const PaymentConfirm = ({ payment, onConfirm, onCancel, loading }) => {
         </div>
         <div className="detail-row">
           <span>Address:</span>
-          <span>{payment.landlords?.house_address}</span>
+          <span>{formatLandlordAddress(payment.landlords)}</span>
         </div>
         <div className="detail-row">
           <span>Payment Type:</span>

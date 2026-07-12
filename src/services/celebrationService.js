@@ -61,8 +61,9 @@ const computeUpcomingEvents = (landlords = [], type, windowDays = DAYS_WINDOW) =
           phone: ll.phone,
           email: ll.email,
           house_address: ll.house_address,
+          house_number: ll.house_number,
+          lane_number: ll.lane_number,
           road: ll.road,
-          zone: ll.zone,
         },
       });
     }
@@ -104,8 +105,9 @@ export const celebrationService = {
           phone,
           email,
           house_address,
-          road,
-          zone
+          house_number,
+          lane_number,
+          road
         ),
         approved_by_admin:admin_profiles!celebrations_queue_approved_by_fkey (
           full_name
@@ -139,7 +141,7 @@ export const celebrationService = {
     // Fallback: compute directly from landlords without needing the queue/cron
     const { data: landlords, error } = await supabase
       .from('landlords')
-      .select('id, title, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
+.select('id, title, full_name, phone, email, house_address, house_number, lane_number, road, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
       .eq('status', 'active')
       .eq('celebrate_opt_in', true);
 
@@ -164,7 +166,9 @@ export const celebrationService = {
           full_name,
           phone,
           email,
-          house_address
+          house_address,
+          house_number,
+          lane_number
         )
       `)
       .eq('status', 'pending')
@@ -197,7 +201,7 @@ export const celebrationService = {
     if (counts.birthdays === 0 || counts.anniversaries === 0) {
       const { data: landlords } = await supabase
         .from('landlords')
-        .select('id, title, full_name, phone, email, house_address, road, zone, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
+.select('id, title, full_name, phone, email, house_address, house_number, lane_number, road, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
         .eq('status', 'active')
         .eq('celebrate_opt_in', true);
       const eligible = (landlords || []).filter((ll) => ll.onboarding_status === 'active' || ll.onboarding_status === 'pending' || ll.onboarding_status == null);
@@ -268,8 +272,9 @@ export const celebrationService = {
           phone,
           email,
           house_address,
-          road,
-          zone
+          house_number,
+          lane_number,
+          road
         )
       `)
       .single();
@@ -288,8 +293,9 @@ export const celebrationService = {
               phone,
               email,
               house_address,
-              road,
-              zone
+              house_number,
+              lane_number,
+              road
             )
           `)
           .eq('landlord_id', celebration.landlord_id)

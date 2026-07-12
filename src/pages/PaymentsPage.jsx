@@ -9,7 +9,7 @@ import PaymentConfirm from '../components/payments/PaymentConfirm';
 import { paymentService } from '../services/paymentService';
 import { receiptService } from '../services/receiptService';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, formatDateTime, getStatusClass, getMonthName, formatLandlordName } from '../utils/helpers';
+import { formatCurrency, formatDateTime, getStatusClass, getMonthName, formatLandlordName, formatLandlordAddress } from '../utils/helpers';
 
 const PaymentsPage = () => {
   const { adminProfile } = useAuth();
@@ -179,7 +179,7 @@ const PaymentsPage = () => {
             <Plus size={18} /> Log Payment
           </button>
         </div>
-        <DataTable columns={columns} data={payments} loading={loading} emptyMessage="No payments found" />
+        <DataTable columns={columns} data={payments} loading={loading} emptyMessage="No payments found" customizable tableId="payments" />
       </div>
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={modalMode === 'add' ? 'Log Payment' : modalMode === 'confirm' ? 'Confirm Payment' : 'Payment Details'} size={modalMode === 'add' ? 'medium' : 'small'}>
         {modalMode === 'add' && <PaymentForm onSubmit={handleSubmit} onCancel={() => setShowModal(false)} loading={saving} />}
@@ -192,7 +192,7 @@ const PaymentsPage = () => {
             </div>
             <div className="detail-row">
               <span>Address:</span>
-              <span>{selectedPayment.landlords?.house_address}</span>
+              <span>{formatLandlordAddress(selectedPayment.landlords)}</span>
             </div>
             {selectedPayment.landlords?.road && (
               <div className="detail-row">

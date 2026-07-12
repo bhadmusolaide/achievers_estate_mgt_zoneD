@@ -3,6 +3,7 @@ import { User, MapPin, CheckCircle, Circle, Loader2, Save, AlertCircle, PlusCirc
 import Modal from '../common/Modal';
 import { onboardingService } from '../../services/onboardingService';
 import { useAuth } from '../../context/AuthContext';
+import { formatLandlordAddress } from '../../utils/helpers';
 
 const OnboardingTaskModal = ({ landlord, onClose }) => {
   const { adminProfile } = useAuth();
@@ -123,7 +124,7 @@ const OnboardingTaskModal = ({ landlord, onClose }) => {
           <div className="landlord-details">
             <h4>{landlord.full_name}</h4>
             <p className="address-text">
-              <MapPin size={14} /> {landlord.house_address || 'No address'}
+              <MapPin size={14} /> {formatLandlordAddress(landlord) || 'No address'}
             </p>
             {landlord.road && (
               <p className="road-text">

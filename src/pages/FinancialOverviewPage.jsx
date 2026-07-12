@@ -15,7 +15,7 @@ import FinancialReportPDF from '../components/financial/FinancialReportPDF';
 import { financialOverviewService } from '../services/financialOverviewService';
 import { transactionService } from '../services/transactionService';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, formatDate, formatLandlordName } from '../utils/helpers';
+import { formatCurrency, formatDate, formatLandlordName, formatLandlordAddress } from '../utils/helpers';
 
 const FinancialOverviewPage = () => {
   const { adminProfile } = useAuth();
@@ -163,10 +163,11 @@ const FinancialOverviewPage = () => {
     try {
       const exportResult = await financialOverviewService.getExportData(filters);
       
-      const headers = ['Landlord Name', 'Zone', 'Payment Types', 'Expected', 'Paid', 'Balance', 'Status', 'Last Payment'];
+      const headers = ['Landlord Name', 'House #', 'Lane', 'Payment Types', 'Expected', 'Paid', 'Balance', 'Status', 'Last Payment'];
       const rows = exportResult.map(row => [
         formatLandlordName(row),
-        row.zone,
+        row.house_number,
+        row.lane_number,
         row.assignedPaymentTypes.map(t => t.name).join('; '),
         row.totalExpected,
         row.totalPaid,
@@ -230,6 +231,7 @@ const FinancialOverviewPage = () => {
         />
       ),
       width: '40px',
+      hideable: false,
       render: (row) => (
         <input
           type="checkbox"
@@ -247,7 +249,7 @@ const FinancialOverviewPage = () => {
       render: (row) => (
         <div className="landlord-cell">
           <span className="landlord-name">{formatLandlordName(row)}</span>
-          <span className="landlord-address">{row.house_address}</span>
+          <span className="landlord-address">{formatLandlordAddress(row)}</span>
         </div>
       )
     },
@@ -492,6 +494,8 @@ const FinancialOverviewPage = () => {
           pagination={pagination}
           sortConfig={sortConfig}
           onSort={handleSort}
+          customizable
+          tableId="financial-overview"
         />
       </div>
 

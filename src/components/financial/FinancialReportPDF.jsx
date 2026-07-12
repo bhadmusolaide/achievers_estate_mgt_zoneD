@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     color: '#2d3748',
   },
   colName: { width: '20%' },
-  colZone: { width: '10%' },
+  colZone: { width: '12%' },
   colTypes: { width: '20%' },
   colExpected: { width: '12%', textAlign: 'right' },
   colPaid: { width: '12%', textAlign: 'right' },
@@ -136,7 +136,6 @@ const FinancialReportPDF = ({ data, totals, filters }) => {
           <Text style={styles.estateName}>{estateName}</Text>
           <Text style={styles.reportTitle}>FINANCIAL OVERVIEW REPORT</Text>
           <Text style={styles.reportDate}>Generated: {generatedDate}</Text>
-          {filters?.zone && <Text style={styles.reportDate}>Zone: {filters.zone}</Text>}
         </View>
 
         <View style={styles.summarySection}>
@@ -174,7 +173,7 @@ const FinancialReportPDF = ({ data, totals, filters }) => {
         {/* Table Header */}
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderCell, styles.colName]}>Landlord</Text>
-          <Text style={[styles.tableHeaderCell, styles.colZone]}>Zone</Text>
+          <Text style={[styles.tableHeaderCell, styles.colZone]}>House/Lane</Text>
           <Text style={[styles.tableHeaderCell, styles.colTypes]}>Payment Types</Text>
           <Text style={[styles.tableHeaderCell, styles.colExpected]}>Expected</Text>
           <Text style={[styles.tableHeaderCell, styles.colPaid]}>Paid</Text>
@@ -191,7 +190,7 @@ const FinancialReportPDF = ({ data, totals, filters }) => {
             wrap={false}
           >
             <Text style={[styles.tableCell, styles.colName]}>{formatLandlordName(landlord)}</Text>
-            <Text style={[styles.tableCell, styles.colZone]}>{landlord.zone}</Text>
+            <Text style={[styles.tableCell, styles.colZone]}>{landlord.house_number || ''}{landlord.house_number && landlord.lane_number ? ' / ' : ''}{landlord.lane_number || ''}</Text>
             <Text style={[styles.tableCell, styles.colTypes]}>
               {landlord.assignedPaymentTypes.map(t => t.name).join(', ') || '-'}
             </Text>

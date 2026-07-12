@@ -5,23 +5,22 @@ import { TITLE_OPTIONS } from '../../utils/helpers';
 const getInitialFormData = (landlord) => ({
   title: landlord?.title || '',
   full_name: landlord?.full_name || '',
+  house_number: landlord?.house_number || '',
+  lane_number: landlord?.lane_number || '',
+  road: landlord?.road || '',
+  occupancy_type: landlord?.occupancy_type || 'owner',
+  occupation: landlord?.occupation || '',
+  date_of_birth: landlord?.date_of_birth ? `2000-${landlord.date_of_birth}` : '',
   phone: landlord?.phone || '',
   email: landlord?.email || '',
-  house_address: landlord?.house_address || '',
-  road: landlord?.road || '',
-  zone: landlord?.zone || 'Zone D',
-  occupancy_type: landlord?.occupancy_type || 'owner',
-  status: landlord?.status || 'active',
-  date_of_birth: landlord?.date_of_birth ? `2000-${landlord.date_of_birth}` : '',
   wedding_anniversary: landlord?.wedding_anniversary ? `2000-${landlord.wedding_anniversary}` : '',
   celebrate_opt_in: landlord?.celebrate_opt_in || false,
+  notes: landlord?.notes || '',
 });
 
 const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
-  // Track landlord id to detect changes and reinitialize form
   const landlordIdRef = useRef(landlord?.id);
 
-  // Reinitialize form data when landlord changes
   const getFormData = () => {
     if (landlordIdRef.current !== landlord?.id) {
       landlordIdRef.current = landlord?.id;
@@ -32,7 +31,6 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
   const [formData, setFormData] = useState(getFormData);
   const [errors, setErrors] = useState({});
 
-  // Check if landlord changed and reset form data
   if (landlordIdRef.current !== landlord?.id) {
     landlordIdRef.current = landlord?.id;
     setFormData(getInitialFormData(landlord));
@@ -42,8 +40,8 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
     const newErrors = {};
     if (!formData.full_name.trim()) newErrors.full_name = 'Name is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
-    if (!formData.house_address.trim()) newErrors.house_address = 'Address is required';
-    if (!formData.road.trim()) newErrors.road = 'Road is required';
+    if (!formData.occupancy_type) newErrors.occupancy_type = 'Occupancy type is required';
+    if (!formData.title) newErrors.title = 'Title is required';
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
@@ -64,7 +62,6 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
     e.preventDefault();
     if (validate()) {
       const submitData = { ...formData };
-      // Convert dates to MM-DD format for database
       if (submitData.date_of_birth) {
         const date = new Date(submitData.date_of_birth);
         submitData.date_of_birth = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -73,6 +70,11 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
         const date = new Date(submitData.wedding_anniversary);
         submitData.wedding_anniversary = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       }
+      delete submitData.status;
+      delete submitData.onboarding_status;
+      delete submitData.onboarding_started_at;
+      delete submitData.onboarding_completed_at;
+      delete submitData.created_at;
       onSubmit(submitData);
     }
   };
@@ -81,12 +83,13 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
     <form onSubmit={handleSubmit} className="form">
       <div className="form-row">
         <div className="form-group" style={{ flex: '0 0 120px' }}>
-          <label htmlFor="title">Title</label>
+          <label htmlFor="title">Title *</label>
           <select
             id="title"
             name="title"
             value={formData.title}
             onChange={handleChange}
+            className={errors.title ? 'error' : ''}
             disabled={loading}
           >
             {TITLE_OPTIONS.map((opt) => (
@@ -95,6 +98,7 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
               </option>
             ))}
           </select>
+          {errors.title && <span className="error-text">{errors.title}</span>}
         </div>
         <div className="form-group" style={{ flex: 1 }}>
           <label htmlFor="full_name">Full Name *</label>
@@ -141,63 +145,87 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
         </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="house_address">House Address *</label>
-        <input
-          type="text"
-          id="house_address"
-          name="house_address"
-          value={formData.house_address}
-          onChange={handleChange}
-          placeholder="e.g. House 15"
-          className={errors.house_address ? 'error' : ''}
-          disabled={loading}
-        />
-        {errors.house_address && <span className="error-text">{errors.house_address}</span>}
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="road">Road *</label>
-        <input
-          type="text"
-          id="road"
-          name="road"
-          value={formData.road}
-          onChange={handleChange}
-          placeholder="e.g., Road 1, Road 3"
-          className={errors.road ? 'error' : ''}
-          disabled={loading}
-        />
-        {errors.road && <span className="error-text">{errors.road}</span>}
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="house_number">House Number</label>
+          <input
+            type="text"
+            id="house_number"
+            name="house_number"
+            value={formData.house_number}
+            onChange={handleChange}
+            placeholder="e.g. House 15"
+            disabled={loading}
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="lane_number">Lane Number</label>
+          <input
+            type="text"
+            id="lane_number"
+            name="lane_number"
+            value={formData.lane_number}
+            onChange={handleChange}
+            placeholder="e.g. Lane 2"
+            disabled={loading}
+          />
+        </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="occupancy_type">Occupancy Type</label>
-          <select
-            id="occupancy_type"
-            name="occupancy_type"
-            value={formData.occupancy_type}
+          <label htmlFor="road">Road</label>
+          <input
+            type="text"
+            id="road"
+            name="road"
+            value={formData.road}
             onChange={handleChange}
+            placeholder="e.g., Road 1, Road 3"
             disabled={loading}
-          >
-            <option value="owner">Owner</option>
-            <option value="tenant">Tenant</option>
-          </select>
+          />
         </div>
         <div className="form-group">
-          <label htmlFor="status">Status</label>
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
+          <label htmlFor="occupation">Occupation</label>
+          <input
+            type="text"
+            id="occupation"
+            name="occupation"
+            value={formData.occupation}
             onChange={handleChange}
+            placeholder="e.g., Doctor, Business"
             disabled={loading}
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+          />
         </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="occupancy_type">Occupancy Type *</label>
+        <select
+          id="occupancy_type"
+          name="occupancy_type"
+          value={formData.occupancy_type}
+          onChange={handleChange}
+          className={errors.occupancy_type ? 'error' : ''}
+          disabled={loading}
+        >
+          <option value="owner">Owner</option>
+          <option value="tenant">Tenant</option>
+        </select>
+        {errors.occupancy_type && <span className="error-text">{errors.occupancy_type}</span>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="notes">Notes</label>
+        <textarea
+          id="notes"
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          placeholder="Additional information, extra phone number, or any notes..."
+          rows={3}
+          disabled={loading}
+        />
       </div>
 
       <div className="form-section">
@@ -257,4 +285,3 @@ const LandlordForm = ({ landlord, onSubmit, onCancel, loading }) => {
 };
 
 export default LandlordForm;
-
