@@ -277,7 +277,7 @@ export const transactionService = {
       if (transaction.status === 'approved') stats.approvedCount++;
       if (transaction.status === 'rejected') stats.rejectedCount++;
 
-      const categoryName = transaction.transaction_categories?.name || 'Unknown';
+      const categoryName = transaction.transaction_categories?.description || transaction.transaction_categories?.name || 'Unknown';
       if (!stats.byCategory[categoryName]) {
         stats.byCategory[categoryName] = { credits: 0, debits: 0 };
       }

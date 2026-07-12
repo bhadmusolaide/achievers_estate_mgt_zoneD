@@ -114,6 +114,17 @@ export const financialOverviewService = {
 
     if (lastPaymentsError) throw lastPaymentsError;
 
+    // Get pending (unconfirmed) payments for these landlords
+    const { data: pendingPayments, error: pendingError } = await supabase
+      .from('payments')
+      .select('landlord_id')
+      .in('landlord_id', landlordIds)
+      .eq('status', 'pending');
+
+    if (pendingError) throw pendingError;
+
+    const pendingReviewSet = new Set((pendingPayments || []).map(p => p.landlord_id));
+
     // Create lookup maps
     // Group payments by landlord AND payment_type for proper matching
     const paymentsByLandlordAndType = {};
@@ -206,6 +217,7 @@ export const financialOverviewService = {
         totalUnassignedPaid,
         balance: totalBalance,
         paymentStatus,
+        needsReview: pendingReviewSet.has(landlord.id),
         lastPaymentDate: lastPaymentByLandlord[landlord.id] || null
       };
     });

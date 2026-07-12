@@ -33,6 +33,9 @@ export const landlordService = {
     if (filters.road) {
       query = query.eq('road', filters.road);
     }
+    if (filters.occupancy_type) {
+      query = query.eq('occupancy_type', filters.occupancy_type);
+    }
 
     const { data, error } = await query;
     if (error) throw error;

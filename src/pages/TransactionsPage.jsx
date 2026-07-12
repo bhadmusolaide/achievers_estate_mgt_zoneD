@@ -187,7 +187,7 @@ const TransactionsPage = () => {
     const rows = exportData.map(t => [
       formatDateTime(t.created_at),
       t.transaction_type,
-      t.transaction_categories?.name || '',
+      t.transaction_categories?.description || t.transaction_categories?.name || '',
       t.amount,
       t.description || '',
       t.reference || '',
@@ -255,7 +255,7 @@ const TransactionsPage = () => {
       width: '150px',
       render: (row) => (
         <span className="category-chip">
-          {row.transaction_categories?.name || 'Unknown'}
+          {row.transaction_categories?.description || row.transaction_categories?.name || 'Unknown'}
         </span>
       )
     },

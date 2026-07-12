@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Download, FileText, Users, CheckCircle,
   AlertCircle, Clock, DollarSign, Link as LinkIcon,
-  Plus, Minus, Edit, Wallet
+  Plus, Minus, Edit, Wallet, Send
 } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import Header from '../components/layout/Header';
@@ -314,7 +314,16 @@ const FinancialOverviewPage = () => {
       header: 'Status',
       width: '100px',
       sortable: true,
-      render: (row) => getStatusBadge(row.paymentStatus)
+      render: (row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {getStatusBadge(row.paymentStatus)}
+          {row.needsReview && (
+            <span className="badge badge-info" title="Sent to Payments for review">
+              <Send size={10} /> Review
+            </span>
+          )}
+        </div>
+      )
     },
     {
       key: 'lastPaymentDate',
