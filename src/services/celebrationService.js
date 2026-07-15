@@ -472,6 +472,16 @@ export const celebrationService = {
     return data;
   },
 
+  async getPendingCount() {
+    const { count, error } = await supabase
+      .from('celebrations_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    if (error) throw error;
+    return count || 0;
+  },
+
   /**
    * Update a template
    */

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -21,9 +21,49 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { userPermissionsService } from '../../services/userPermissionsService';
+import { feedbackService } from '../../services/feedbackService';
+import { paymentService } from '../../services/paymentService';
+import { onboardingService } from '../../services/onboardingService';
+import { celebrationService } from '../../services/celebrationService';
+import { receiptService } from '../../services/receiptService';
+import { useState, useEffect, useCallback } from 'react';
 
 const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
   const { adminProfile, signOut } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
+  const [pendingOnboardingCount, setPendingOnboardingCount] = useState(0);
+  const [pendingCelebrationCount, setPendingCelebrationCount] = useState(0);
+  const [unsentReceiptCount, setUnsentReceiptCount] = useState(0);
+  const location = useLocation();
+  const isFeedbackPage = location.pathname === '/feedback';
+  const isPaymentsPage = location.pathname === '/payments';
+  const isOnboardingPage = location.pathname === '/onboarding';
+  const isCelebrationsPage = location.pathname === '/celebrations';
+  const isReceiptsPage = location.pathname === '/receipts';
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const [feedbackCount, paymentCount, onboardingStats, celebrationCount, receiptCount] = await Promise.all([
+        isFeedbackPage ? Promise.resolve(0) : feedbackService.getUnreadCount(),
+        isPaymentsPage ? Promise.resolve(0) : paymentService.getPendingCount(),
+        isOnboardingPage ? Promise.resolve({ pending: 0 }) : onboardingService.getStats(),
+        isCelebrationsPage ? Promise.resolve(0) : celebrationService.getPendingCount(),
+        isReceiptsPage ? Promise.resolve(0) : receiptService.getUnsentCount(),
+      ]);
+      setUnreadCount(feedbackCount);
+      setPendingPaymentCount(paymentCount);
+      setPendingOnboardingCount(onboardingStats.pending);
+      setPendingCelebrationCount(celebrationCount);
+      setUnsentReceiptCount(receiptCount);
+    } catch {
+      // Silently fail
+    }
+  }, [isFeedbackPage, isPaymentsPage, isOnboardingPage, isCelebrationsPage, isReceiptsPage]);
+
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts, location.pathname]);
 
   const navItems = [
     {
@@ -142,6 +182,21 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
               >
                 <item.icon size={20} />
                 {!collapsed && <span>{item.label}</span>}
+                {item.to === '/feedback' && unreadCount > 0 && (
+                  <span className="sidebar-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                )}
+                {item.to === '/payments' && pendingPaymentCount > 0 && (
+                  <span className="sidebar-badge">{pendingPaymentCount > 99 ? '99+' : pendingPaymentCount}</span>
+                )}
+                {item.to === '/onboarding' && pendingOnboardingCount > 0 && (
+                  <span className="sidebar-badge">{pendingOnboardingCount > 99 ? '99+' : pendingOnboardingCount}</span>
+                )}
+                {item.to === '/celebrations' && pendingCelebrationCount > 0 && (
+                  <span className="sidebar-badge">{pendingCelebrationCount > 99 ? '99+' : pendingCelebrationCount}</span>
+                )}
+                {item.to === '/receipts' && unsentReceiptCount > 0 && (
+                  <span className="sidebar-badge">{unsentReceiptCount > 99 ? '99+' : unsentReceiptCount}</span>
+                )}
               </NavLink>
             </li>
           ))}
