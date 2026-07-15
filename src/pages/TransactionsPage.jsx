@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Download, FileText, DollarSign, TrendingUp, TrendingDown, AlertCircle, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { Plus, Download, FileText, DollarSign, TrendingUp, TrendingDown, AlertCircle, CheckCircle, XCircle, Eye, Landmark } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import Header from '../components/layout/Header';
 import DataTable from '../components/common/DataTable';
@@ -9,8 +9,9 @@ import SearchFilter from '../components/common/SearchFilter';
 import TransactionForm from '../components/transactions/TransactionForm';
 import ConfirmActionModal from '../components/common/ConfirmActionModal';
 import { transactionService } from '../services/transactionService';
+import { debtService } from '../services/debtService';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, formatDateTime, getStatusClass, formatLandlordName } from '../utils/helpers';
+import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
 
 const TransactionsPage = () => {
   const { adminProfile } = useAuth();
@@ -24,6 +25,7 @@ const TransactionsPage = () => {
     approvedCount: 0,
     rejectedCount: 0,
   });
+  const [totalDebt, setTotalDebt] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({});
   const [categories, setCategories] = useState([]);
@@ -53,12 +55,14 @@ const TransactionsPage = () => {
 
   const loadInitialData = async () => {
     try {
-      const [categoriesData, rolesData] = await Promise.all([
+      const [categoriesData, rolesData, debtData] = await Promise.all([
         transactionService.getCategories(),
         transactionService.getApprovalRoles(),
+        debtService.getTotalOutstanding(),
       ]);
       setCategories(categoriesData);
       setApprovalRoles(rolesData);
+      setTotalDebt(debtData);
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
@@ -388,6 +392,12 @@ const TransactionsPage = () => {
             value={formatCurrency(statistics.netFlow)}
             icon={statistics.netFlow >= 0 ? TrendingUp : TrendingDown}
             variant={statistics.netFlow >= 0 ? 'success' : 'danger'}
+          />
+          <StatsCard
+            title="Project Debts"
+            value={formatCurrency(totalDebt)}
+            icon={Landmark}
+            variant={totalDebt > 0 ? 'danger' : 'success'}
           />
         </div>
 

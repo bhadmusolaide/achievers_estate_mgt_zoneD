@@ -12,6 +12,8 @@ export const DEFAULT_PERMISSIONS = {
   celebrations: true,
   audit_log: true,
   settings: true,
+  zone_management: true,
+  feedback: true,
 };
 
 // Feature definitions with labels and descriptions
@@ -26,6 +28,8 @@ export const FEATURE_DEFINITIONS = [
   { key: 'celebrations', label: 'Celebrations', description: 'Manage birthday and anniversary celebrations' },
   { key: 'audit_log', label: 'Audit Log', description: 'View system activity logs' },
   { key: 'settings', label: 'Settings', description: 'Access settings page', protected: true },
+  { key: 'zone_management', label: 'Zone Management', description: 'Manage projects, pledges, and public zone info' },
+  { key: 'feedback', label: 'Feedback', description: 'View and manage feedback from landlords' },
 ];
 
 // Map route paths to permission keys
@@ -40,6 +44,8 @@ export const ROUTE_TO_PERMISSION = {
   '/celebrations': 'celebrations',
   '/audit-log': 'audit_log',
   '/settings': 'settings',
+  '/zone-management': 'zone_management',
+  '/feedback': 'feedback',
 };
 
 export const userPermissionsService = {
