@@ -1,8 +1,9 @@
-import { Bell, Menu, Moon, Sun } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
+import { Bell, Info, Menu, Moon, Sun } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Header = ({ title }) => {
+  const navigate = useNavigate();
   const { adminProfile } = useAuth();
   const { toggleSidebar, theme, toggleTheme } = useOutletContext() || {};
 
@@ -16,6 +17,14 @@ const Header = ({ title }) => {
       </div>
 
       <div className="header-right">
+        <button
+          className="header-btn-public"
+          type="button"
+          onClick={() => navigate('/zone-info')}
+          title="Public Dashboard"
+        >
+          <Info size={16} /> Public Dashboard
+        </button>
         <button
           className="btn-icon"
           type="button"

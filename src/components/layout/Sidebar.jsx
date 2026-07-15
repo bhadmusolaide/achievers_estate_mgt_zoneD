@@ -15,7 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Building2,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { userPermissionsService } from '../../services/userPermissionsService';
@@ -83,6 +85,18 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
       icon: ScrollText,
       label: 'Audit Log',
       tooltip: 'Review a chronological trail of key actions in the system.'
+    },
+    {
+      to: '/zone-management',
+      icon: Building2,
+      label: 'Zone Management',
+      tooltip: 'Manage projects, pledges, and public zone information.'
+    },
+    {
+      to: '/feedback',
+      icon: MessageSquare,
+      label: 'Feedback',
+      tooltip: 'View and manage feedback submitted by landlords.'
     },
     {
       to: '/settings',

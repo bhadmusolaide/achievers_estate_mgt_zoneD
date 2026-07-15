@@ -16,6 +16,9 @@ import TransactionsPage from './pages/TransactionsPage';
 import CelebrationsPage from './pages/CelebrationsPage';
 import AuditLogPage from './pages/AuditLogPage';
 import SettingsPage from './pages/SettingsPage';
+import PublicZonePage from './pages/PublicZonePage';
+import ZoneManagementPage from './pages/ZoneManagementPage';
+import FeedbackPage from './pages/FeedbackPage';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -55,7 +58,10 @@ function App() {
                 <Route path="celebrations" element={<CelebrationsPage />} />
                 <Route path="audit-log" element={<AuditLogPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="zone-management" element={<ZoneManagementPage />} />
+                <Route path="feedback" element={<FeedbackPage />} />
               </Route>
+              <Route path="zone-info" element={<PublicZonePage />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </BrowserRouter>
