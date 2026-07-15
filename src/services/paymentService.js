@@ -216,6 +216,19 @@ export const paymentService = {
     if (error) throw error;
     return data.length > 0;
   },
+
+  /**
+   * Get count of pending (unconfirmed) payments
+   */
+  async getPendingCount() {
+    const { count, error } = await supabase
+      .from('payments')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    if (error) throw error;
+    return count || 0;
+  },
 };
 
 export default paymentService;

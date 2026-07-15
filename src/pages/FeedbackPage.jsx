@@ -36,6 +36,11 @@ const FeedbackPage = () => {
       }
 
       setItems(filtered);
+
+      const unreadIds = data.filter((i) => !i.is_read).map((i) => i.id);
+      if (unreadIds.length > 0) {
+        await feedbackService.markAsRead(unreadIds);
+      }
     } catch (error) {
       console.error('Error loading feedback:', error);
     } finally {

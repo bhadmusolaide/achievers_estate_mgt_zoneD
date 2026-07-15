@@ -181,6 +181,20 @@ export const receiptService = {
     if (error) throw error;
     return count || 0;
   },
+
+  /**
+   * Get count of receipts not yet sent via email or WhatsApp
+   */
+  async getUnsentCount() {
+    const { count, error } = await supabase
+      .from('receipts')
+      .select('*', { count: 'exact', head: true })
+      .eq('sent_email', false)
+      .eq('sent_whatsapp', false);
+
+    if (error) throw error;
+    return count || 0;
+  },
 };
 
 export default receiptService;
