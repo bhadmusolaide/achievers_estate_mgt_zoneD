@@ -4149,6 +4149,17 @@ body {
   white-space: nowrap;
 }
 
+.financial-overview-page .payment-type-year {
+  font-size: 0.6rem;
+  padding: 0.075rem 0.35rem;
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  color: var(--gray-600);
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+}
+
 .financial-overview-page .unassigned-payments {
   display: flex;
   align-items: center;

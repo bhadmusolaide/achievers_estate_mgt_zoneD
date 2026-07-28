@@ -7,7 +7,8 @@ import { format } from 'date-fns';
 export const generateReferenceCode = (landlordId, year, month, paymentType) => {
   const shortId = landlordId.slice(0, 8).toUpperCase();
   const monthStr = String(month).padStart(2, '0');
-  return `ZD-${shortId}-${year}-${monthStr}-${paymentType.toUpperCase()}`;
+  const suffix = Date.now().toString(36).slice(-4).toUpperCase();
+  return `ZD-${shortId}-${year}-${monthStr}-${paymentType.toUpperCase()}-${suffix}`;
 };
 
 /**

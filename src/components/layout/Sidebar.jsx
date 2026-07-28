@@ -81,13 +81,13 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
     {
       to: '/financial-overview',
       icon: PieChart,
-      label: 'Est. Payment Center',
+      label: 'Financial Overview',
       tooltip: 'See who owes what, what has been paid, and outstanding balances by landlord.'
     },
     {
       to: '/transactions',
       icon: ArrowLeftRight,
-      label: 'Account Management',
+      label: 'Transactions',
       tooltip: 'Review credits and debits, and keep the estate account reconciled.'
     },
     {

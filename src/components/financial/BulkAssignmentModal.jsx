@@ -84,13 +84,14 @@ const BulkAssignmentModal = ({
           adminId,
           frequency,
           (frequency === 'monthly' || frequency === 'one-time') ? selectedMonth : null,
-          (frequency === 'yearly' || frequency === 'one-time') ? selectedYear : null
+          selectedYear
         );
       } else {
         await financialOverviewService.bulkUnassign(
           landlordIds,
           selectedPaymentType,
-          adminId
+          adminId,
+          selectedYear
         );
       }
 
@@ -229,8 +230,8 @@ const BulkAssignmentModal = ({
 
             <p className="confirm-summary">
               {mode === 'assign'
-                ? `You are about to assign "${selectedTypeName}" with amount ${formatCurrency(parseFloat(amount))} to ${selectedLandlords.length} landlord(s).`
-                : `You are about to unassign "${selectedTypeName}" from ${selectedLandlords.length} landlord(s).`}
+                ? `You are about to assign "${selectedTypeName}" with amount ${formatCurrency(parseFloat(amount))} to ${selectedLandlords.length} landlord(s) for year ${selectedYear}.`
+                : `You are about to unassign "${selectedTypeName}" from ${selectedLandlords.length} landlord(s) for year ${selectedYear}.`}
             </p>
 
             {error && <div className="error-message">{error}</div>}

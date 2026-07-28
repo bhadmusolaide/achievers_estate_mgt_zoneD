@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Modal from '../common/Modal';
 import { paymentService } from '../../services/paymentService';
-import { formatCurrency, formatDateTime } from '../../utils/helpers';
+import { formatCurrency, formatDateTime, getMonthName } from '../../utils/helpers';
 
 const PartialPaymentModal = ({ isOpen, onClose, landlord, onSuccess, adminId }) => {
+  const now = new Date();
   const [formData, setFormData] = useState({
     payment_type_id: '',
     amount: '',
     payment_method: 'cash',
+    payment_month: now.getMonth() + 1,
+    payment_year: now.getFullYear(),
   });
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
@@ -16,17 +19,23 @@ const PartialPaymentModal = ({ isOpen, onClose, landlord, onSuccess, adminId }) 
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  const selectedPaymentType = paymentTypes.find(t => t.id === formData.payment_type_id);
+  const paymentFrequency = selectedPaymentType?.frequency || 'monthly';
+  const showMonthSelector = paymentFrequency === 'monthly';
+
   // Load payment types and history when modal opens
   useEffect(() => {
     if (isOpen && landlord) {
+      const now = new Date();
       loadPaymentTypes();
       loadPaymentHistory();
-      // Reset form with default payment type if available
       const defaultPaymentTypeId = landlord?.assignedPaymentTypes?.[0]?.id || '';
       setFormData({
         payment_type_id: defaultPaymentTypeId,
         amount: '',
         payment_method: 'cash',
+        payment_month: now.getMonth() + 1,
+        payment_year: now.getFullYear(),
       });
     }
   }, [isOpen, landlord]);
@@ -74,11 +83,6 @@ const PartialPaymentModal = ({ isOpen, onClose, landlord, onSuccess, adminId }) 
       return;
     }
 
-    // Get current date for period
-    const now = new Date();
-    const paymentMonth = now.getMonth() + 1; // JS months are 0-based
-    const paymentYear = now.getFullYear();
-
     setLoading(true);
     try {
       await paymentService.create({
@@ -88,8 +92,8 @@ const PartialPaymentModal = ({ isOpen, onClose, landlord, onSuccess, adminId }) 
         payment_method: formData.payment_method,
         installment: false,
         installment_stage: null,
-        payment_month: paymentMonth,
-        payment_year: paymentYear,
+        payment_month: formData.payment_month,
+        payment_year: formData.payment_year,
       }, adminId);
 
       onSuccess();
@@ -103,6 +107,16 @@ const PartialPaymentModal = ({ isOpen, onClose, landlord, onSuccess, adminId }) 
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+
+    // When payment type changes, auto-set month based on frequency
+    if (field === 'payment_type_id') {
+      const type = paymentTypes.find(t => t.id === value);
+      if (type?.frequency === 'yearly' || type?.frequency === 'one-time') {
+        setFormData(prev => ({ ...prev, payment_month: 1 }));
+      } else {
+        setFormData(prev => ({ ...prev, payment_month: new Date().getMonth() + 1 }));
+      }
+    }
   };
 
   if (!landlord) return null;
@@ -144,6 +158,42 @@ const PartialPaymentModal = ({ isOpen, onClose, landlord, onSuccess, adminId }) 
               Outstanding balance: {formatCurrency(landlord.balance)}
             </small>
           )}
+        </div>
+
+        <div className="form-row">
+          {showMonthSelector && (
+            <div className="form-group">
+              <label>Month *</label>
+              <select
+                value={formData.payment_month}
+                onChange={(e) => handleInputChange('payment_month', parseInt(e.target.value))}
+                required
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {getMonthName(i + 1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="form-group">
+            <label>Year *</label>
+            <select
+              value={formData.payment_year}
+              onChange={(e) => handleInputChange('payment_year', parseInt(e.target.value))}
+              required
+            >
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - 2 + i;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
 
         <div className="form-group">
