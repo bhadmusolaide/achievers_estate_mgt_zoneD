@@ -261,10 +261,13 @@ const FinancialOverviewPage = () => {
         <div className="payment-types-cell">
           {row.assignedPaymentTypes.length > 0 ? (
             row.assignedPaymentTypes.map(type => (
-              <div key={type.id} className="payment-type-breakdown" title={`Expected: ${formatCurrency(type.expected)} | Paid: ${formatCurrency(type.paid)} | Balance: ${formatCurrency(type.balance)}`}>
+              <div key={`${type.id}_${type.start_year || ''}`} className="payment-type-breakdown" title={`Expected: ${formatCurrency(type.expected)} | Paid: ${formatCurrency(type.paid)} | Balance: ${formatCurrency(type.balance)}`}>
                 <span className={`payment-type-chip ${type.balance <= 0 ? 'paid' : type.paid > 0 ? 'partial' : 'pending'}`}>
                   {type.name}
                 </span>
+                {type.start_year && (
+                  <span className="payment-type-year">{type.start_year}</span>
+                )}
                 <span className="payment-type-amounts">
                   {formatCurrency(type.paid)}/{formatCurrency(type.expected)}
                 </span>
@@ -444,6 +447,21 @@ const FinancialOverviewPage = () => {
                 {paymentTypes.map(type => (
                   <option key={type.id} value={type.id}>{type.name}</option>
                 ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Year</label>
+              <select
+                value={filters.year || ''}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+              >
+                <option value="">All Years</option>
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - 2 + i;
+                  return (
+                    <option key={year} value={year}>{year}</option>
+                  );
+                })}
               </select>
             </div>
             <div className="filter-group">

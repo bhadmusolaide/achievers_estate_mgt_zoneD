@@ -51,14 +51,32 @@ export const financialOverviewService = {
     }
     if (filters.paymentTypeId) {
       // Get landlords with this payment type assigned
-      const { data: assigned, error: assignError } = await supabase
+      let assignedQuery = supabase
         .from('landlord_payment_types')
         .select('landlord_id')
         .eq('payment_type_id', filters.paymentTypeId)
         .eq('active', true);
+
+      if (filters.year) {
+        assignedQuery = assignedQuery.eq('start_year', filters.year);
+      }
+
+      const { data: assigned, error: assignError } = await assignedQuery;
       if (assignError) throw assignError;
       const assignedIds = assigned.map(a => a.landlord_id);
       query = query.in('id', assignedIds);
+    } else if (filters.year) {
+      // Filter landlords by those who have assignments for the specified year
+      const { data: yearAssignments, error: yearError } = await supabase
+        .from('landlord_payment_types')
+        .select('landlord_id')
+        .eq('active', true)
+        .eq('start_year', filters.year);
+
+      if (!yearError && yearAssignments.length > 0) {
+        const yearAssignedIds = yearAssignments.map(a => a.landlord_id);
+        query = query.in('id', yearAssignedIds);
+      }
     }
 
     // Apply pagination
@@ -71,7 +89,7 @@ export const financialOverviewService = {
     const landlordIds = landlords.map(l => l.id);
     let landlordPaymentTypes = [];
     try {
-      const { data, error } = await supabase
+      let lptQuery = supabase
         .from('landlord_payment_types')
         .select(`
           landlord_id,
@@ -87,6 +105,12 @@ export const financialOverviewService = {
         .in('landlord_id', landlordIds)
         .eq('active', true);
 
+      if (filters.year) {
+        lptQuery = lptQuery.eq('start_year', filters.year);
+      }
+
+      const { data, error } = await lptQuery;
+
       if (error) throw error;
       landlordPaymentTypes = data || [];
     } catch (error) {
@@ -98,7 +122,7 @@ export const financialOverviewService = {
     // Get confirmed payments for these landlords
     const { data: payments, error: paymentsError } = await supabase
       .from('payments')
-      .select('landlord_id, payment_type_id, amount')
+      .select('landlord_id, payment_type_id, amount, payment_year')
       .in('landlord_id', landlordIds)
       .eq('status', 'confirmed');
 
@@ -128,12 +152,19 @@ export const financialOverviewService = {
     // Create lookup maps
     // Group payments by landlord AND payment_type for proper matching
     const paymentsByLandlordAndType = {};
+    const paymentsByLandlordAndTypeAndYear = {};
     payments.forEach(p => {
       const key = `${p.landlord_id}_${p.payment_type_id}`;
       if (!paymentsByLandlordAndType[key]) {
         paymentsByLandlordAndType[key] = [];
       }
       paymentsByLandlordAndType[key].push(p);
+
+      const yearKey = `${key}_${p.payment_year}`;
+      if (!paymentsByLandlordAndTypeAndYear[yearKey]) {
+        paymentsByLandlordAndTypeAndYear[yearKey] = [];
+      }
+      paymentsByLandlordAndTypeAndYear[yearKey].push(p);
     });
 
     // Also keep a flat list of all payments per landlord for "other payments" tracking
@@ -170,8 +201,18 @@ export const financialOverviewService = {
 
       // Calculate per-payment-type breakdown with matched payments
       const paymentTypeBreakdown = activeAssignments.map(assignment => {
-        const key = `${landlord.id}_${assignment.payment_type_id}`;
-        const matchedPayments = paymentsByLandlordAndType[key] || [];
+        const frequency = assignment.frequency || assignment.payment_types?.frequency || 'monthly';
+        const isYearSpecific = frequency === 'yearly' || frequency === 'one-time';
+
+        let matchedPayments;
+        if (isYearSpecific && assignment.start_year) {
+          const yearKey = `${landlord.id}_${assignment.payment_type_id}_${assignment.start_year}`;
+          matchedPayments = paymentsByLandlordAndTypeAndYear[yearKey] || [];
+        } else {
+          const key = `${landlord.id}_${assignment.payment_type_id}`;
+          matchedPayments = paymentsByLandlordAndType[key] || [];
+        }
+
         const expectedAmount = parseFloat(assignment.amount || 0);
         const paidAmount = matchedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
         const balance = expectedAmount - paidAmount;
@@ -179,7 +220,8 @@ export const financialOverviewService = {
         return {
           id: assignment.payment_type_id,
           name: assignment.payment_types?.name,
-          frequency: assignment.frequency || assignment.payment_types?.frequency || 'monthly',
+          frequency,
+          start_year: assignment.start_year,
           expected: expectedAmount,
           paid: paidAmount,
           balance: balance
@@ -497,13 +539,16 @@ export const financialOverviewService = {
    */
   async bulkAssign(landlordIds, paymentTypeId, amount, adminId, frequency = 'monthly', startMonth = null, startYear = null) {
     try {
+      // Ensure start_year is always set (default to current year)
+      const year = startYear || new Date().getFullYear();
+
       const assignments = landlordIds.map(landlordId => ({
         landlord_id: landlordId,
         payment_type_id: paymentTypeId,
         amount: amount,
         frequency: frequency,
         start_month: startMonth,
-        start_year: startYear,
+        start_year: year,
         active: true,
         assigned_by: adminId,
         assigned_at: new Date().toISOString()
@@ -512,7 +557,7 @@ export const financialOverviewService = {
       const { data, error } = await supabase
         .from('landlord_payment_types')
         .upsert(assignments, {
-          onConflict: 'landlord_id,payment_type_id',
+          onConflict: 'landlord_id,payment_type_id,start_year',
           ignoreDuplicates: false
         })
         .select();
@@ -550,13 +595,20 @@ export const financialOverviewService = {
    * Bulk unassign payment types from landlords
    * Sets active = false instead of deleting
    */
-  async bulkUnassign(landlordIds, paymentTypeId, adminId) {
+  async bulkUnassign(landlordIds, paymentTypeId, adminId, startYear = null) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('landlord_payment_types')
         .update({ active: false })
         .in('landlord_id', landlordIds)
-        .eq('payment_type_id', paymentTypeId)
+        .eq('payment_type_id', paymentTypeId);
+
+      // If a specific year is provided, only unassign that year
+      if (startYear) {
+        query = query.eq('start_year', startYear);
+      }
+
+      const { data, error } = await query
         .select();
 
       if (error) throw error;
@@ -589,18 +641,21 @@ export const financialOverviewService = {
   /**
    * Assign single payment type to single landlord
    */
-  async assignPaymentType(landlordId, paymentTypeId, amount, adminId) {
+  async assignPaymentType(landlordId, paymentTypeId, amount, adminId, frequency = 'monthly', startYear = null) {
+    const year = startYear || new Date().getFullYear();
     const { data, error } = await supabase
       .from('landlord_payment_types')
       .upsert({
         landlord_id: landlordId,
         payment_type_id: paymentTypeId,
         amount: amount,
+        frequency: frequency,
+        start_year: year,
         active: true,
         assigned_by: adminId,
         assigned_at: new Date().toISOString()
       }, {
-        onConflict: 'landlord_id,payment_type_id',
+        onConflict: 'landlord_id,payment_type_id,start_year',
         ignoreDuplicates: false
       })
       .select()
