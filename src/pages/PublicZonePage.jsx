@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, Home, MessageSquare } from 'lucide-react';
+import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, Home, MessageSquare, Search, Loader2 } from 'lucide-react';
 import { publicDashboardService } from '../services/publicDashboardService';
 import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
 import FeedbackModal from '../components/common/FeedbackModal';
+import Modal from '../components/common/Modal';
 
 const MILESTONE_LABELS = {
   open: 'Open',
@@ -23,6 +24,11 @@ const PublicZonePage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showLookup, setShowLookup] = useState(false);
+  const [lookupForm, setLookupForm] = useState({ phone: '' });
+  const [lookupResult, setLookupResult] = useState(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -39,6 +45,36 @@ const PublicZonePage = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleLookupSubmit = async (e) => {
+    e.preventDefault();
+    if (!lookupForm.phone.trim()) return;
+    setLookupLoading(true);
+    setLookupResult(null);
+    setLookupError('');
+    try {
+      const result = await publicDashboardService.lookupLandlord(
+        lookupForm.phone.trim()
+      );
+      setLookupResult(result);
+    } catch (err) {
+      setLookupError(err.message);
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  const closeLookup = () => {
+    setShowLookup(false);
+    setLookupForm({ phone: '' });
+    setLookupResult(null);
+    setLookupError('');
+  };
+
+  const handleLookupInputChange = (e) => {
+    setLookupForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setLookupError('');
+  };
 
   if (loading) {
     return (
@@ -74,6 +110,14 @@ const PublicZonePage = () => {
             <span>Estate Information Portal</span>
           </div>
         </div>
+        <div className="public-zone-header-actions">
+          <button className="btn btn-secondary" onClick={() => setShowLookup(true)}>
+            <Search size={18} /> Check My Debt
+          </button>
+          <button className="btn btn-secondary" onClick={loadData}>
+            <RefreshCw size={18} /> Refresh
+          </button>
+        </div>
       </div>
       
       <div className="page-content">
@@ -82,9 +126,6 @@ const PublicZonePage = () => {
             <h2>Welcome to Achievers 1 - Zone D</h2>
             <p>Transparency and community updates at your fingertips</p>
           </div>
-          <button className="btn btn-secondary" onClick={loadData}>
-            <RefreshCw size={18} /> Refresh
-          </button>
         </div>
 
         {/* Stats Cards */}
@@ -255,6 +296,54 @@ const PublicZonePage = () => {
       <button className="fab" onClick={() => setShowFeedback(true)} title="Send feedback or suggestion">
         <MessageSquare size={22} />
       </button>
+
+      <Modal isOpen={showLookup} onClose={closeLookup} title="Check Your Debt" size="small">
+        <form className="landlord-lookup-form" onSubmit={handleLookupSubmit}>
+          {!lookupResult ? (
+            <>
+              <p className="lookup-instruction">
+                Enter your phone number to check your outstanding balance.
+              </p>
+              <div className="form-group">
+                <label htmlFor="lookup-phone">Phone Number</label>
+                <input
+                  id="lookup-phone"
+                  name="phone"
+                  type="tel"
+                  value={lookupForm.phone}
+                  onChange={handleLookupInputChange}
+                  placeholder="e.g. 08012345678"
+                  required
+                />
+              </div>
+              {lookupError && <div className="lookup-error">{lookupError}</div>}
+              <button className="btn btn-primary btn-block" type="submit" disabled={lookupLoading}>
+                {lookupLoading ? <Loader2 size={18} className="spin" /> : <Search size={18} />}
+                {lookupLoading ? 'Looking up...' : 'Look Up'}
+              </button>
+            </>
+          ) : (
+            <div className="lookup-result">
+              <div className="lookup-result-icon">
+                <Home size={32} />
+              </div>
+              <h3>{lookupResult.name}</h3>
+              <div className="lookup-debt-info">
+                <span className="lookup-debt-label">Total Outstanding</span>
+                <span className={`lookup-debt-amount ${lookupResult.outstanding > 0 ? 'has-debt' : 'clear'}`}>
+                  {formatCurrency(lookupResult.outstanding)}
+                </span>
+              </div>
+              {lookupResult.outstanding > 0 ? (
+                <p className="lookup-debt-note">Please contact the Financial Secretary to settle your outstanding balance.</p>
+              ) : (
+                <p className="lookup-debt-note clear">Your account is fully paid up. Thank you!</p>
+              )}
+              <button className="btn btn-secondary btn-block" onClick={closeLookup}>Close</button>
+            </div>
+          )}
+        </form>
+      </Modal>
 
       <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>

@@ -3981,7 +3981,8 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.financial-overview-page .status-summary {
+.financial-overview-page .status-summary,
+.transactions-page .status-summary {
   display: flex;
   gap: 1.5rem;
   padding: 0.75rem 1rem;
@@ -3990,7 +3991,8 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.financial-overview-page .status-item {
+.financial-overview-page .status-item,
+.transactions-page .status-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -3998,15 +4000,18 @@ body {
   color: var(--gray-700);
 }
 
-.financial-overview-page .icon-success {
+.financial-overview-page .icon-success,
+.transactions-page .icon-success {
   color: var(--success);
 }
 
-.financial-overview-page .icon-warning {
+.financial-overview-page .icon-warning,
+.transactions-page .icon-warning {
   color: var(--warning);
 }
 
-.financial-overview-page .icon-danger {
+.financial-overview-page .icon-danger,
+.transactions-page .icon-danger {
   color: var(--danger);
 }
 
@@ -4124,7 +4129,7 @@ body {
 
 .financial-overview-page .payment-type-chip.partial {
   background: var(--warning-light, #fef3c7);
-  color: var(--warning, #d97706);
+  color: #000;
 }
 
 .financial-overview-page .payment-type-chip.pending {
@@ -6001,10 +6006,18 @@ body {
   opacity: 0.8;
 }
 
-.public-zone-header .btn-secondary {
+.public-zone-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.public-zone-header .btn-secondary,
+.public-zone-header-actions .btn-secondary {
   background: rgba(255, 255, 255, 0.15);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
 }
 .public-zone-page .page-content {
   max-width: 1200px;
@@ -6023,6 +6036,86 @@ body {
 
 .public-zone-page .page-header p {
   color: var(--gray-600);
+}
+
+.landlord-lookup-form .lookup-instruction {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.landlord-lookup-form .lookup-error {
+  background: var(--danger-light, #fce4e4);
+  color: var(--danger, #dc2626);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.landlord-lookup-form .lookup-result {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.landlord-lookup-form .lookup-result-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary-light, #dbeafe);
+  color: var(--primary);
+  margin: 0 auto 1rem;
+}
+
+.landlord-lookup-form .lookup-result h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+
+.landlord-lookup-form .lookup-debt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.landlord-lookup-form .lookup-debt-label {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.landlord-lookup-form .lookup-debt-amount {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.landlord-lookup-form .lookup-debt-amount.has-debt {
+  color: var(--danger, #dc2626);
+}
+
+.landlord-lookup-form .lookup-debt-amount.clear {
+  color: var(--success, #059669);
+}
+
+.landlord-lookup-form .lookup-debt-note {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.landlord-lookup-form .lookup-debt-note.clear {
+  color: var(--success, #059669);
 }
 
 .zone-card-grid {

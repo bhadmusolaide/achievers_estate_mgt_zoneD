@@ -46,6 +46,36 @@ export const publicDashboardService = {
       return fallbackData();
     }
   },
+
+  async lookupLandlord(phoneNumber) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Configuration not available');
+    }
+
+    const baseUrl = supabaseUrl.replace(/\/$/, '');
+    const response = await fetch(
+      `${baseUrl}/functions/v1/public-landlord-lookup`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Lookup failed');
+    }
+
+    return data;
+  },
 };
 
 export default publicDashboardService;
