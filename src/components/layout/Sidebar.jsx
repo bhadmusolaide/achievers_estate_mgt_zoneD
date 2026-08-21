@@ -118,7 +118,7 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
       to: '/bulk-import',
       icon: Upload,
       label: 'Bulk Import',
-      tooltip: 'Upload many landlords at once using a spreadsheet.'
+      tooltip: 'Import landlords and financial data from CSV spreadsheets.'
     },
     {
       to: '/audit-log',

@@ -103,7 +103,7 @@ CREATE TABLE celebrations_queue (
     landlord_id UUID NOT NULL REFERENCES landlords(id) ON DELETE CASCADE,
     celebration_type VARCHAR(20) NOT NULL CHECK (celebration_type IN ('birthday', 'anniversary')),
     celebration_date DATE NOT NULL,
-    days_to_event INTEGER NOT NULL CHECK (days_to_event >= 0 AND days_to_event <= 3),
+    days_to_event INTEGER NOT NULL CHECK (days_to_event >= 0 AND days_to_event <= 7),
     year INTEGER NOT NULL CHECK (year >= 2020),
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'sent', 'skipped')),
     custom_message TEXT,

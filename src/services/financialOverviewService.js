@@ -704,6 +704,38 @@ export const financialOverviewService = {
   async getExportData(filters = {}) {
     const { data } = await this.getOverview(filters, 1, 10000);
     return data;
+  },
+
+  /**
+   * Export financial assignments in import-compatible CSV format
+   */
+  async getImportExportData(filters = {}) {
+    let query = supabase
+      .from('landlord_payment_types')
+      .select(`
+        id,
+        amount,
+        frequency,
+        start_month,
+        start_year,
+        active,
+        landlord_id,
+        payment_type_id,
+        payment_types (id, name, frequency),
+        landlords!inner (id, phone, full_name)
+      `)
+      .eq('active', true);
+
+    if (filters.start_year) {
+      query = query.eq('start_year', filters.start_year);
+    }
+    if (filters.paymentTypeId) {
+      query = query.eq('payment_type_id', filters.paymentTypeId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   }
 };
 

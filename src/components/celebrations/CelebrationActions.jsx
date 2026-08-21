@@ -5,6 +5,8 @@ import { celebrationMessagingService } from '../../services/celebrationMessaging
 import { useAuth } from '../../context/AuthContext';
 import { formatLandlordName, formatLandlordAddress } from '../../utils/helpers';
 
+const MAX_DAYS_TO_QUEUE = 7;
+
 const CelebrationActions = ({ celebration, onComplete }) => {
   const { adminProfile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -15,6 +17,11 @@ const CelebrationActions = ({ celebration, onComplete }) => {
   const handleApprove = async () => {
     setLoading(true);
     try {
+      if (celebration.days_to_event > MAX_DAYS_TO_QUEUE) {
+        alert(`This celebration is ${celebration.days_to_event} days away. It can only be queued and approved within ${MAX_DAYS_TO_QUEUE} days of the event.`);
+        setLoading(false);
+        return;
+      }
       // If it's a computed celebration, queue and approve it
       if (celebration.computed) {
         await celebrationService.approveComputed(celebration, adminProfile.id);
@@ -24,7 +31,7 @@ const CelebrationActions = ({ celebration, onComplete }) => {
       onComplete();
     } catch (error) {
       console.error('Error approving celebration:', error);
-      alert('Failed to approve. Please try again.');
+      alert('Failed to approve. Please try again later.');
     } finally {
       setLoading(false);
     }

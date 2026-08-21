@@ -109,7 +109,7 @@ serve(async (req) => {
     console.log(`Found ${landlords?.length || 0} landlords`);
 
     const celebrationsToInsert: CelebrationInsert[] = [];
-    const daysToCheck = [0, 1, 2, 3]; // Same day, 1 day before, 2 days before, 3 days before
+    const daysToCheck = [0, 1, 2, 3, 4, 5, 6, 7];
 
     for (const landlord of (landlords || []) as Landlord[]) {
       // Check birthdays

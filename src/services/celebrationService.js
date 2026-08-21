@@ -135,21 +135,34 @@ export const celebrationService = {
    * Get celebrations by type (birthdays or anniversaries)
    */
   async getByType(type, filters = {}) {
-    const data = await this.getAll({ ...filters, celebration_type: type });
-    if (data && data.length > 0) return data;
+    // Always fetch from queue and compute fallback in parallel
+    const [queueData, landlordsResult] = await Promise.all([
+      this.getAll({ ...filters, celebration_type: type }),
+      supabase
+        .from('landlords')
+        .select('id, title, full_name, phone, email, house_address, house_number, lane_number, road, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
+        .eq('status', 'active')
+        .eq('celebrate_opt_in', true),
+    ]);
 
-    // Fallback: compute directly from landlords without needing the queue/cron
-    const { data: landlords, error } = await supabase
-      .from('landlords')
-.select('id, title, full_name, phone, email, house_address, house_number, lane_number, road, date_of_birth, wedding_anniversary, celebrate_opt_in, status, onboarding_status')
-      .eq('status', 'active')
-      .eq('celebrate_opt_in', true);
-
+    const { data: landlords, error } = landlordsResult;
     if (error) throw error;
 
-    // Do not block on onboarding; include pending too so users see the event
-    const eligible = (landlords || []).filter((ll) => ll.onboarding_status === 'active' || ll.onboarding_status === 'pending' || ll.onboarding_status == null);
-    return computeUpcomingEvents(eligible, type);
+    const eligible = (landlords || []).filter(
+      (ll) => ll.onboarding_status === 'active' || ll.onboarding_status === 'pending' || ll.onboarding_status == null
+    );
+    const computed = computeUpcomingEvents(eligible, type);
+
+    // Deduplicate: exclude computed events already in the queue (same landlord + type)
+    const queueKeys = new Set(
+      (queueData || []).map((c) => `${c.landlord_id}-${c.celebration_type}`)
+    );
+    const merged = [
+      ...(queueData || []),
+      ...computed.filter((c) => !queueKeys.has(`${c.landlord_id}-${c.celebration_type}`)),
+    ];
+
+    return merged.sort((a, b) => a.days_to_event - b.days_to_event);
   },
 
   /**

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Download, FileText, Users, CheckCircle,
   AlertCircle, Clock, DollarSign, Link as LinkIcon,
-  Plus, Minus, Edit, Wallet, Send
+  Plus, Minus, Edit, Wallet, Send, Upload
 } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import Header from '../components/layout/Header';
@@ -49,6 +49,7 @@ const FinancialOverviewPage = () => {
   const [exportData, setExportData] = useState([]);
   const [loadingExport, setLoadingExport] = useState(false);
   const [accountBalance, setAccountBalance] = useState(0);
+  const [loadingImportExport, setLoadingImportExport] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -189,6 +190,38 @@ const FinancialOverviewPage = () => {
       console.error('Error exporting CSV:', error);
     } finally {
       setLoadingExport(false);
+    }
+  };
+
+  const handleExportImportCSV = async () => {
+    setLoadingImportExport(true);
+    try {
+      const exportResult = await financialOverviewService.getImportExportData(filters);
+      
+      const headers = ['landlord_phone', 'payment_type_name', 'amount', 'frequency', 'start_year', 'start_month', 'notes'];
+      const rows = exportResult.map(row => [
+        row.landlords?.phone || '',
+        row.payment_types?.name || '',
+        row.amount,
+        row.frequency,
+        row.start_year || '',
+        row.start_month || '',
+        ''
+      ]);
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `financial-assignments-import-${formatDate(new Date(), 'yyyy-MM-dd')}.csv`;
+      link.click();
+    } catch (error) {
+      console.error('Error exporting import CSV:', error);
+    } finally {
+      setLoadingImportExport(false);
     }
   };
 
@@ -496,6 +529,14 @@ const FinancialOverviewPage = () => {
               disabled={loadingExport}
             >
               <Download size={16} /> CSV
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={handleExportImportCSV}
+              disabled={loadingImportExport}
+              title="Export assignments in import-compatible format"
+            >
+              <Upload size={16} /> Import CSV
             </button>
             <PDFDownloadLink
               document={<FinancialReportPDF data={exportData.length > 0 ? exportData : data} totals={totals} filters={filters} />}
