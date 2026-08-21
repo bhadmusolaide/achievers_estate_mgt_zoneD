@@ -57,11 +57,22 @@ const DataWipeManager = () => {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to wipe data');
+        let message = error.message || 'Failed to wipe data';
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            message = body.details || body.error || message;
+          } catch (_) {}
+        }
+        throw new Error(message);
       }
 
       setResult(data);
       setStep(5);
+
+      if (data?.success === false) {
+        setError('Some tables could not be cleared. See the summary below.');
+      }
     } catch (err) {
       setError(err.message || 'An error occurred while wiping data');
       setStep(3);
@@ -177,15 +188,21 @@ const DataWipeManager = () => {
 
       {/* Step 5: Complete */}
       {step === 5 && result && (
-        <div className="danger-zone-card complete">
-          <CheckCircle size={48} className="success-icon" />
-          <h4>Data Wipe Complete</h4>
-          <p>All data has been successfully deleted.</p>
+        <div className={`danger-zone-card complete ${result.success === false ? 'has-errors' : ''}`}>
+          {result.success === false ? (
+            <XCircle size={48} className="error-icon" />
+          ) : (
+            <CheckCircle size={48} className="success-icon" />
+          )}
+          <h4>{result.success === false ? 'Data Wipe Completed With Errors' : 'Data Wipe Complete'}</h4>
+          <p>{result.message || (result.success === false
+            ? 'Some data may remain. Review the summary and contact support if needed.'
+            : 'All data has been successfully deleted.')}</p>
           <div className="results-summary">
             <h5>Deletion Summary:</h5>
             <ul>
               {result.results?.map((r, idx) => (
-                <li key={idx}>
+                <li key={idx} className={r.error ? 'result-error' : undefined}>
                   {r.table}: {r.count} {r.error ? `(Error: ${r.error})` : 'deleted'}
                 </li>
               ))}

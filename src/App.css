@@ -6114,6 +6114,20 @@ body {
   margin-bottom: 1rem;
 }
 
+.danger-zone-card .error-icon {
+  color: var(--danger);
+  margin-bottom: 1rem;
+}
+
+.danger-zone-card.has-errors {
+  border-color: var(--danger);
+}
+
+.results-summary li.result-error {
+  color: var(--danger);
+  font-weight: 500;
+}
+
 .results-summary {
   text-align: left;
   background: var(--surface);
