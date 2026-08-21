@@ -82,11 +82,11 @@ const DataWipeManager = () => {
             <AlertTriangle size={24} className="danger-icon" />
             <div>
               <h4>Delete All Data</h4>
-              <p>Remove all landlords, payments, receipts, transactions, and activity logs.</p>
+              <p>Remove all records — landlords, payments, transactions, receipts, projects, pledges, activity logs, onboarding data, celebration queue, and public feedback.</p>
             </div>
           </div>
           <p className="preserve-note">
-            <strong>Preserved:</strong> Admin accounts, payment types, transaction categories, and settings.
+            <strong>Preserved (define what you collect):</strong> Admin accounts, payment types (dues, levy, security, project, development_levy), transaction categories, celebration templates, and settings. These structural records stay — only the data that references them (assignments, transactions, payments) is wiped.
           </p>
           <button className="btn btn-danger" onClick={handleFirstConfirm}>
             <Trash2 size={18} />
@@ -112,6 +112,8 @@ const DataWipeManager = () => {
               <li>All activity/audit logs</li>
               <li>All onboarding data</li>
               <li>All celebration queue items</li>
+              <li>All projects, pledges, and project debts</li>
+              <li>All public feedback</li>
             </ul>
             <p className="warning-text">This action is <strong>irreversible</strong>.</p>
           </div>

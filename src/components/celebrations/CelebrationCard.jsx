@@ -22,10 +22,20 @@ const CelebrationCard = ({ celebration, onAction }) => {
     return <span className={`badge ${config.class}`}>{config.label}</span>;
   };
 
+  const recalcDaysToEvent = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const eventDate = new Date(celebration.celebration_date + 'T00:00:00');
+    return Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
   const getDaysLabel = () => {
-    if (celebration.days_to_event === 0) return 'Today!';
-    if (celebration.days_to_event === 1) return 'Tomorrow';
-    return `In ${celebration.days_to_event} days`;
+    const days = recalcDaysToEvent();
+    if (days === 0) return 'Today!';
+    if (days === 1) return 'Tomorrow';
+    if (days === -1) return 'Yesterday';
+    if (days < 0) return `${Math.abs(days)} days ago`;
+    return `In ${days} days`;
   };
 
   const handleActionComplete = () => {
@@ -66,7 +76,7 @@ const CelebrationCard = ({ celebration, onAction }) => {
             </div>
             <div className="detail-row highlight">
               <Clock size={16} />
-              <span className={celebration.days_to_event === 0 ? 'today' : ''}>
+              <span className={recalcDaysToEvent() === 0 ? 'today' : ''}>
                 {getDaysLabel()}
               </span>
             </div>

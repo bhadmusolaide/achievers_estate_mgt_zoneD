@@ -9,6 +9,7 @@ import PaymentConfirm from '../components/payments/PaymentConfirm';
 import { paymentService } from '../services/paymentService';
 import { receiptService } from '../services/receiptService';
 import { useAuth } from '../context/AuthContext';
+import { userPermissionsService } from '../services/userPermissionsService';
 import { formatCurrency, formatDateTime, getStatusClass, getMonthName, formatLandlordName, formatLandlordAddress } from '../utils/helpers';
 
 const PaymentsPage = () => {
@@ -21,6 +22,8 @@ const PaymentsPage = () => {
   const [modalMode, setModalMode] = useState('add');
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [saving, setSaving] = useState(false);
+  const canRecord = userPermissionsService.hasPermission(adminProfile, 'log_payments');
+  const canConfirm = userPermissionsService.hasPermission(adminProfile, 'confirm_payments');
 
   useEffect(() => {
     loadData();
@@ -139,7 +142,7 @@ const PaymentsPage = () => {
           <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleView(row); }} title="View">
             <Eye size={16} />
           </button>
-          {row.status === 'pending' && (
+          {row.status === 'pending' && canConfirm && (
             <button 
               className="btn-icon btn-success" 
               onClick={(e) => { e.stopPropagation(); handleConfirmClick(row); }}
@@ -175,9 +178,11 @@ const PaymentsPage = () => {
       <div className="page-content">
         <div className="page-header">
           <SearchFilter filters={filterOptions} onFilterChange={handleFilterChange} activeFilters={filters} />
-          <button className="btn btn-primary" onClick={handleAdd}>
-            <Plus size={18} /> Log Payment
-          </button>
+          {canRecord && (
+            <button className="btn btn-primary" onClick={handleAdd}>
+              <Plus size={18} /> Log Payment
+            </button>
+          )}
         </div>
         <DataTable columns={columns} data={payments} loading={loading} emptyMessage="No payments found" customizable tableId="payments" />
       </div>
