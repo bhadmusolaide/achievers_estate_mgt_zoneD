@@ -6,8 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+type DeletionResult = { table: string; count: number; error?: string }
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -15,11 +16,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    // Create admin client with service role key
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-    
-    // Get auth header to verify the requesting user
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -28,12 +26,10 @@ serve(async (req) => {
       )
     }
 
-    // Create client with user's token to verify identity
     const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     })
 
-    // Get the current user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     if (authError || !user) {
       return new Response(
@@ -42,7 +38,6 @@ serve(async (req) => {
       )
     }
 
-    // Verify the user is a chairman
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('admin_profiles')
       .select('role')
@@ -63,10 +58,9 @@ serve(async (req) => {
       )
     }
 
-    // Get confirmation phrase from request body
     const { confirmationPhrase } = await req.json()
     const expectedPhrase = 'DELETE ALL DATA'
-    
+
     if (confirmationPhrase !== expectedPhrase) {
       return new Response(
         JSON.stringify({ error: `Invalid confirmation. Please type "${expectedPhrase}" exactly.` }),
@@ -76,113 +70,51 @@ serve(async (req) => {
 
     console.log(`Data wipe initiated by chairman: ${user.email}`)
 
-    // Delete data in order (respecting foreign key constraints)
-    const deletionResults: { table: string; count: number; error?: string }[] = []
+    const deletionResults: DeletionResult[] = []
 
-    // 1. Delete activity log details (FK to activity_logs)
-    const { count: logDetailCount, error: logDetailError } = await supabaseAdmin
-      .from('activity_log_details').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'activity_log_details', count: logDetailCount || 0, error: logDetailError?.message })
+    const { data: rpcResults, error: rpcError } = await supabaseAdmin.rpc('wipe_all_application_data')
 
-    // 2. Delete activity logs
-    const { count: activityCount, error: activityError } = await supabaseAdmin
-      .from('activity_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'activity_logs', count: activityCount || 0, error: activityError?.message })
-
-    // 3. Delete receipts (files will be handled by storage deletion)
-    const { count: receiptsCount, error: receiptsError } = await supabaseAdmin
-      .from('receipts').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'receipts', count: receiptsCount || 0, error: receiptsError?.message })
-
-    // 4. Clear account_balance foreign key reference to transactions BEFORE deleting transactions
-    const { error: clearRefError } = await supabaseAdmin
-      .from('account_balance')
-      .update({ last_transaction_id: null })
-      .eq('id', '00000000-0000-0000-0000-000000000001')
-    if (clearRefError) {
-      console.error('Failed to clear account_balance reference:', clearRefError.message)
+    if (rpcError) {
+      console.error('wipe_all_application_data RPC failed:', rpcError.message)
+      return new Response(
+        JSON.stringify({
+          error: 'Data wipe failed. Ensure the latest database migration has been applied, then retry.',
+          details: rpcError.message,
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // 5. Delete transactions (now safe after clearing FK reference)
-    const { count: txCount, error: txError } = await supabaseAdmin
-      .from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'transactions', count: txCount || 0, error: txError?.message })
+    if (Array.isArray(rpcResults)) {
+      for (const row of rpcResults) {
+        deletionResults.push({
+          table: row.table,
+          count: row.count ?? 0,
+        })
+      }
+    }
 
-    // 6. Delete payments
-    const { count: paymentsCount, error: paymentsError } = await supabaseAdmin
-      .from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'payments', count: paymentsCount || 0, error: paymentsError?.message })
-
-    // 7. Delete onboarding tasks
-    const { count: taskCount, error: taskError } = await supabaseAdmin
-      .from('onboarding_tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'onboarding_tasks', count: taskCount || 0, error: taskError?.message })
-
-    // 8. Delete onboarding activity log
-    const { count: onboardLogCount, error: onboardLogError } = await supabaseAdmin
-      .from('onboarding_activity_log').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'onboarding_activity_log', count: onboardLogCount || 0, error: onboardLogError?.message })
-
-    // 9. Delete debt payments (FK to project_debts with RESTRICT)
-    const { count: debtPayCount, error: debtPayError } = await supabaseAdmin
-      .from('debt_payments').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'debt_payments', count: debtPayCount || 0, error: debtPayError?.message })
-
-    // 10. Delete project debts (FK to projects with RESTRICT)
-    const { count: projectDebtCount, error: projectDebtError } = await supabaseAdmin
-      .from('project_debts').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'project_debts', count: projectDebtCount || 0, error: projectDebtError?.message })
-
-    // 11. Delete projects
-    const { count: projectCount, error: projectError } = await supabaseAdmin
-      .from('projects').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'projects', count: projectCount || 0, error: projectError?.message })
-
-    // 12. Delete pledges (FK to landlords with SET NULL — safe to delete before landlords)
-    const { count: pledgeCount, error: pledgeError } = await supabaseAdmin
-      .from('pledges').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'pledges', count: pledgeCount || 0, error: pledgeError?.message })
-
-    // 13. Delete celebrations queue
-    const { count: celebCount, error: celebError } = await supabaseAdmin
-      .from('celebrations_queue').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'celebrations_queue', count: celebCount || 0, error: celebError?.message })
-
-    // 14. Delete landlord payment types
-    const { count: lptCount, error: lptError } = await supabaseAdmin
-      .from('landlord_payment_types').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'landlord_payment_types', count: lptCount || 0, error: lptError?.message })
-
-    // 15. Delete landlords
-    const { count: landlordsCount, error: landlordsError } = await supabaseAdmin
-      .from('landlords').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'landlords', count: landlordsCount || 0, error: landlordsError?.message })
-
-    // 16. Delete feedback (no FK dependencies)
-    const { count: feedbackCount, error: feedbackError } = await supabaseAdmin
-      .from('feedback').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    deletionResults.push({ table: 'feedback', count: feedbackCount || 0, error: feedbackError?.message })
-
-    // 17. Reset account balance to 0
-    const { error: balanceError } = await supabaseAdmin
-      .from('account_balance').update({ balance: 0 }).eq('id', '00000000-0000-0000-0000-000000000001')
-    deletionResults.push({ table: 'account_balance (reset)', count: balanceError ? 0 : 1, error: balanceError?.message })
-
-    // 18. Delete receipt files from storage
     const { data: files } = await supabaseAdmin.storage.from('receipts').list()
     if (files && files.length > 0) {
       const filePaths = files.map(f => f.name)
-      await supabaseAdmin.storage.from('receipts').remove(filePaths)
-      deletionResults.push({ table: 'storage:receipts', count: files.length })
+      const { error: storageError } = await supabaseAdmin.storage.from('receipts').remove(filePaths)
+      deletionResults.push({
+        table: 'storage:receipts',
+        count: storageError ? 0 : files.length,
+        error: storageError?.message,
+      })
     }
 
+    const errors = deletionResults.filter(r => r.error)
     console.log('Data wipe completed:', deletionResults)
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'All data has been deleted successfully',
-        results: deletionResults
+      JSON.stringify({
+        success: errors.length === 0,
+        message: errors.length === 0
+          ? 'All data has been deleted successfully'
+          : 'Data wipe completed with errors — review the summary below.',
+        results: deletionResults,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -195,4 +127,3 @@ serve(async (req) => {
     )
   }
 })
-
