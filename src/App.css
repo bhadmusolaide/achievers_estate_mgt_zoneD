@@ -118,6 +118,18 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.sidebar-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  width: 24px;
+  height: 24px;
+}
+
 .sidebar.collapsed .sidebar-header {
   padding: 1.25rem;
   justify-content: center;
@@ -1188,6 +1200,13 @@ body {
   padding: 2rem;
   text-align: center;
   border-bottom: 1px solid var(--gray-200);
+}
+
+.login-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
 }
 
 .login-header h1 {
@@ -6185,6 +6204,13 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.public-zone-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .public-zone-header-inner h1 {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, Home, MessageSquare, Search, Loader2 } from 'lucide-react';
+import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, MessageSquare, Search, Loader2 } from 'lucide-react';
 import { publicDashboardService } from '../services/publicDashboardService';
 import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
 import FeedbackModal from '../components/common/FeedbackModal';
@@ -81,7 +81,7 @@ const PublicZonePage = () => {
       <div className="page public-zone-page">
         <div className="public-zone-header">
           <div className="public-zone-header-inner">
-            <Home size={24} />
+            <img src="/AECA_Logo.png" alt="AECA Logo" className="public-zone-logo" />
             <div>
               <h1>Achievers 1 - Zone D</h1>
               <span>Estate Information Portal</span>
@@ -104,7 +104,7 @@ const PublicZonePage = () => {
     <div className="page public-zone-page">
       <div className="public-zone-header">
         <div className="public-zone-header-inner">
-          <Home size={24} />
+          <img src="/AECA_Logo.png" alt="AECA Logo" className="public-zone-logo" style={{ width: 24, height: 24 }} />
           <div>
             <h1>Achievers 1 - Zone D</h1>
             <span>Estate Information Portal</span>
@@ -325,7 +325,7 @@ const PublicZonePage = () => {
           ) : (
             <div className="lookup-result">
               <div className="lookup-result-icon">
-                <Home size={32} />
+                <img src="/AECA_Logo.png" alt="AECA Logo" className="public-zone-logo" style={{ width: 32, height: 32 }} />
               </div>
               <h3>{lookupResult.name}</h3>
               <div className="lookup-debt-info">
