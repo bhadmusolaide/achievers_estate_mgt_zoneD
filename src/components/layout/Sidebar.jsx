@@ -6,7 +6,6 @@ import {
   Receipt,
   Settings,
   LogOut,
-  Home,
   PartyPopper,
   Upload,
   ClipboardList,
@@ -152,7 +151,7 @@ const Sidebar = ({ onNavClick, collapsed, onToggleCollapse }) => {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
-        <Home size={28} />
+        <img src="/AECA_Logo.png" alt="AECA Logo" className="sidebar-logo" />
         {!collapsed && (
           <div className="sidebar-brand">
             <h4>Achievers 1 - Zone D</h4>

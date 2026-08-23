@@ -43,6 +43,7 @@ const LoginForm = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
+          <img src="/AECA_Logo.png" alt="AECA Logo" className="login-logo" />
           <h1>Achievers 1 Estate - Zone D</h1>
           <p>Landlord Management System</p>
         </div>
