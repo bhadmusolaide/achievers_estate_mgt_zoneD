@@ -15,10 +15,12 @@ import FinancialReportPDF from '../components/financial/FinancialReportPDF';
 import { financialOverviewService } from '../services/financialOverviewService';
 import { transactionService } from '../services/transactionService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, formatLandlordName, formatLandlordAddress } from '../utils/helpers';
 
 const FinancialOverviewPage = () => {
   const { adminProfile } = useAuth();
+  const { warning } = useToast();
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({
     totalExpected: 0,
@@ -149,6 +151,17 @@ const FinancialOverviewPage = () => {
   };
 
   const handlePartialPayment = (landlord) => {
+    const hasAssignedTypes = landlord.assignedPaymentTypes && landlord.assignedPaymentTypes.length > 0;
+
+    if (!hasAssignedTypes) {
+      warning(
+        `"${formatLandlordName(landlord)}" has no payment types assigned. ` +
+        `Select the landlord and use "Assign Type" first before recording a payment.`,
+        6000
+      );
+      return;
+    }
+
     setSelectedLandlordForPartial(landlord);
     setShowPartialModal(true);
   };
