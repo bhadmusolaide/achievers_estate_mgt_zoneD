@@ -9,6 +9,7 @@ import UpcomingCelebrationsAlert from '../components/dashboard/UpcomingCelebrati
 import { dashboardService } from '../services/dashboardService';
 import { celebrationService } from '../services/celebrationService';
 import { notificationPreferencesService } from '../services/notificationPreferencesService';
+import { celebrationReminderService } from '../services/celebrationReminderService';
 import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
@@ -20,7 +21,9 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAlerts, setShowAlerts] = useState(true);
+  const [reminderSent, setReminderSent] = useState(false);
   const dataLoadedRef = useRef(false);
+  const reminderRef = useRef(false);
 
   useEffect(() => {
     if (!dataLoadedRef.current) {
@@ -50,12 +53,21 @@ const DashboardPage = () => {
       });
       setUpcomingCelebrations(upcomingCelebrationsData);
       setShowAlerts(alertsEnabled);
+      setReminderSent(true);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Send celebration reminder email once on initial load
+  useEffect(() => {
+    if (reminderSent && adminProfile?.id && !reminderRef.current) {
+      reminderRef.current = true;
+      celebrationReminderService.sendAdminReminder(adminProfile);
+    }
+  }, [reminderSent, adminProfile]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
