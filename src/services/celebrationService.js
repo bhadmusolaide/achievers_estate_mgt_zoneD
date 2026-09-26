@@ -116,8 +116,7 @@ export const celebrationService = {
           full_name
         )
       `)
-      .order('celebration_date', { ascending: true })
-      .order('days_to_event', { ascending: true });
+      .order('celebration_date', { ascending: true });
 
     if (filters.celebration_type) {
       query = query.eq('celebration_type', filters.celebration_type);
@@ -137,7 +136,9 @@ export const celebrationService = {
     return (data || []).filter((c) => {
       if (c.status === 'sent') return true;
       if (c.status === 'skipped') return false;
-      if (c.days_to_event < -3) return false;
+      if (!c.celebration_date) return true;
+      const daysSince = Math.floor((Date.now() - new Date(c.celebration_date + 'T00:00:00').getTime()) / (24 * 60 * 60 * 1000));
+      if (daysSince > 3) return false;
       return true;
     });
   },
@@ -196,7 +197,7 @@ export const celebrationService = {
         )
       `)
       .eq('status', 'pending')
-      .order('days_to_event', { ascending: true });
+      .order('celebration_date', { ascending: true });
 
     if (error) throw error;
     return data;
@@ -244,12 +245,15 @@ export const celebrationService = {
    * Get upcoming celebrations count (next 3 days)
    */
   async getUpcomingCount() {
+    const today = new Date().toISOString().split('T')[0];
+    const threeDaysOut = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
     const { count, error } = await supabase
       .from('celebrations_queue')
       .select('*', { count: 'exact', head: true })
       .in('status', ['pending', 'approved'])
-      .gt('days_to_event', 0)
-      .lte('days_to_event', 3);
+      .gte('celebration_date', today)
+      .lte('celebration_date', threeDaysOut);
 
     if (error) throw error;
     return count || 0;
@@ -526,11 +530,15 @@ export const celebrationService = {
    * Returns the count of skipped records.
    */
   async cleanupExpired() {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const cutoff = threeDaysAgo.toISOString().split('T')[0];
+
     const { data: expired, error: fetchError } = await supabase
       .from('celebrations_queue')
       .select('id')
       .in('status', ['pending', 'approved'])
-      .lt('days_to_event', -3);
+      .lt('celebration_date', cutoff);
 
     if (fetchError) throw fetchError;
     if (!expired || expired.length === 0) return 0;

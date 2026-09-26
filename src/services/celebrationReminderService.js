@@ -3,6 +3,13 @@ import { messagingService } from './messagingService';
 
 const ESTATE_NAME = import.meta.env.VITE_ESTATE_NAME || 'Zone-D Estate';
 
+const computeDaysFromDate = (dateStr) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(dateStr + 'T00:00:00');
+  return Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
 const formatCelebrationList = (celebrations) => {
   const grouped = { today: [], tomorrow: [], upcoming: [] };
   celebrations.forEach((c) => {
@@ -10,10 +17,11 @@ const formatCelebrationList = (celebrations) => {
     const name = landlord ? `${landlord.title || ''} ${landlord.full_name || ''}`.trim() : 'Unknown';
     const label = c.celebration_type === 'birthday' ? 'Birthday' : 'Anniversary';
     const entry = `• ${name} — ${label}`;
+    const daysToEvent = computeDaysFromDate(c.celebration_date);
 
-    if (c.days_to_event === 0) grouped.today.push(entry);
-    else if (c.days_to_event === 1) grouped.tomorrow.push(entry);
-    else grouped.upcoming.push(`${entry} (${c.days_to_event} days away)`);
+    if (daysToEvent === 0) grouped.today.push(entry);
+    else if (daysToEvent === 1) grouped.tomorrow.push(entry);
+    else grouped.upcoming.push(`${entry} (${daysToEvent} days away)`);
   });
   return grouped;
 };
@@ -81,13 +89,15 @@ export const celebrationReminderService = {
    * Fetch pending celebrations that are due today, tomorrow, or within 3 days.
    */
   async getPendingCelebrations() {
+    const today = new Date().toISOString().split('T')[0];
+    const threeDaysOut = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
     const { data, error } = await supabase
       .from('celebrations_queue')
       .select(`
         id,
         celebration_type,
         celebration_date,
-        days_to_event,
         status,
         landlords (
           id,
@@ -98,9 +108,8 @@ export const celebrationReminderService = {
         )
       `)
       .in('status', ['pending', 'approved'])
-      .gte('days_to_event', 0)
-      .lte('days_to_event', 3)
-      .order('days_to_event', { ascending: true })
+      .gte('celebration_date', today)
+      .lte('celebration_date', threeDaysOut)
       .order('celebration_date', { ascending: true });
 
     if (error) throw error;

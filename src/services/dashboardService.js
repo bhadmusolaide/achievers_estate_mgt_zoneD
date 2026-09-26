@@ -146,6 +146,9 @@ export const dashboardService = {
    */
   async getUpcomingCelebrations() {
     try {
+      const today = new Date().toISOString().split('T')[0];
+      const threeDaysOut = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
       // Fetch upcoming celebrations from the queue
       const { data: queuedCelebrations, error: queueError } = await supabase
         .from('celebrations_queue')
@@ -164,10 +167,10 @@ export const dashboardService = {
           )
         `)
         .in('status', ['pending', 'approved'])
-        .gt('days_to_event', 0)
-        .lte('days_to_event', 3)
-        .order('days_to_event', { ascending: true })
-        .limit(5); // Limit to top 5 upcoming celebrations
+        .gte('celebration_date', today)
+        .lte('celebration_date', threeDaysOut)
+        .order('celebration_date', { ascending: true })
+        .limit(5);
 
       if (queueError) throw queueError;
 

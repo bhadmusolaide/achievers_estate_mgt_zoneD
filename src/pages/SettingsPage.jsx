@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { messagingConfigService } from '../services/messagingConfigService';
 import { notificationPreferencesService, DEFAULT_PREFERENCES } from '../services/notificationPreferencesService';
+import { adminProfileService } from '../services/adminProfileService';
 import UserManagement from '../components/settings/UserManagement';
 import TransactionCategoriesManager from '../components/settings/TransactionCategoriesManager';
 import ApprovalSettingsManager from '../components/settings/ApprovalSettingsManager';
@@ -14,6 +15,8 @@ const SettingsPage = () => {
   const { adminProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState({ full_name: '', email: '' });
+  const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -45,6 +48,15 @@ const SettingsPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminProfile?.id]);
+
+  useEffect(() => {
+    if (adminProfile) {
+      setProfileForm({
+        full_name: adminProfile.full_name || '',
+        email: adminProfile.email || '',
+      });
+    }
+  }, [adminProfile]);
 
   const loadNotificationPreferences = async () => {
     setLoadingPrefs(true);
@@ -133,6 +145,38 @@ const SettingsPage = () => {
     }
   };
 
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfileForm(prev => ({ ...prev, [name]: value }));
+    setProfileMessage({ type: '', text: '' });
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    setProfileMessage({ type: '', text: '' });
+
+    if (!profileForm.full_name.trim()) {
+      setProfileMessage({ type: 'error', text: 'Full name is required' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await adminProfileService.updateProfile(adminProfile.id, {
+        full_name: profileForm.full_name.trim(),
+        email: profileForm.email.trim() || undefined,
+      });
+
+      if (result.success) {
+        setProfileMessage({ type: 'success', text: 'Profile updated successfully' });
+      }
+    } catch (error) {
+      setProfileMessage({ type: 'error', text: error.message || 'Failed to update profile' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleTestEmail = async () => {
     if (!testEmail) {
       setEmailTestResult({ success: false, error: 'Please enter an email address' });
@@ -205,24 +249,43 @@ const SettingsPage = () => {
           </div>
 
           <div className="settings-content">
-            {activeTab === 'profile' && (
+{activeTab === 'profile' && (
               <div className="settings-section">
                 <h3>Profile Settings</h3>
                 <p className="section-description">Manage your account information</p>
-                
-                <form className="form">
+
+                {profileMessage.text && (
+                  <div className={`${profileMessage.type}-message`} style={{ marginBottom: '1rem' }}>
+                    {profileMessage.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                    <span>{profileMessage.text}</span>
+                  </div>
+                )}
+
+                <form className="form" onSubmit={handleProfileSubmit}>
                   <div className="form-group">
                     <label>Full Name</label>
-                    <input 
-                      type="text" 
-                      defaultValue={adminProfile?.full_name}
-                      disabled
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={profileForm.full_name}
+                      onChange={handleProfileChange}
+                      disabled={saving}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={profileForm.email}
+                      onChange={handleProfileChange}
+                      disabled={saving}
                     />
                   </div>
                   <div className="form-group">
                     <label>Role</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       defaultValue={adminProfile?.role}
                       disabled
                       className="capitalize"
@@ -230,12 +293,16 @@ const SettingsPage = () => {
                   </div>
                   <div className="form-group">
                     <label>Zone</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       defaultValue={adminProfile?.zone}
                       disabled
                     />
                   </div>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
+                    Save Changes
+                  </button>
                 </form>
               </div>
             )}
