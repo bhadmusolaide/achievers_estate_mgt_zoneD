@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Cake, Heart, Calendar, ArrowRight, Bell } from 'lucide-react';
 
+const computeDaysFromDate = (dateStr) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(dateStr + 'T00:00:00');
+  return Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
 const UpcomingCelebrationsAlert = ({ celebrations, loading }) => {
   if (loading) {
     return (
@@ -31,12 +38,12 @@ const UpcomingCelebrationsAlert = ({ celebrations, loading }) => {
       day: 'numeric'
     });
     
-    if (celebration.days_to_event === 0) {
+    if (computeDaysFromDate(celebration.celebration_date) === 0) {
       alertText = `${celebration.landlords?.full_name}'s ${celebration.celebration_type === 'birthday' ? 'birthday' : 'wedding anniversary'} is today!`;
-    } else if (celebration.days_to_event === 1) {
+    } else if (computeDaysFromDate(celebration.celebration_date) === 1) {
       alertText = `${celebration.landlords?.full_name}'s ${celebration.celebration_type === 'birthday' ? 'birthday' : 'wedding anniversary'} is tomorrow!`;
     } else {
-      alertText = `${celebration.landlords?.full_name}'s ${celebration.celebration_type === 'birthday' ? 'birthday' : 'wedding anniversary'} is in ${celebration.days_to_event} days (${dateStr})`;
+      alertText = `${celebration.landlords?.full_name}'s ${celebration.celebration_type === 'birthday' ? 'birthday' : 'wedding anniversary'} is in ${computeDaysFromDate(celebration.celebration_date)} days (${dateStr})`;
     }
     
     alertIcon = celebration.celebration_type === 'birthday' ? <Cake size={20} /> : <Heart size={20} />;

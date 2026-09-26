@@ -7,6 +7,13 @@ import { formatLandlordName, formatLandlordAddress } from '../../utils/helpers';
 
 const MAX_DAYS_TO_QUEUE = 7;
 
+const computeDaysFromDate = (dateStr) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(dateStr + 'T00:00:00');
+  return Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
 const CelebrationActions = ({ celebration, onComplete }) => {
   const { adminProfile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -17,8 +24,9 @@ const CelebrationActions = ({ celebration, onComplete }) => {
   const handleApprove = async () => {
     setLoading(true);
     try {
-      if (celebration.days_to_event > MAX_DAYS_TO_QUEUE) {
-        alert(`This celebration is ${celebration.days_to_event} days away. It can only be queued and approved within ${MAX_DAYS_TO_QUEUE} days of the event.`);
+      const daysToEvent = computeDaysFromDate(celebration.celebration_date);
+      if (daysToEvent > MAX_DAYS_TO_QUEUE) {
+        alert(`This celebration is ${daysToEvent} days away. It can only be queued and approved within ${MAX_DAYS_TO_QUEUE} days of the event.`);
         setLoading(false);
         return;
       }
@@ -109,9 +117,9 @@ const CelebrationActions = ({ celebration, onComplete }) => {
           {landlord?.road && ` (${landlord?.road})`}
         </p>
         <p className="days-info">
-          {celebration.days_to_event === 0
+          {computeDaysFromDate(celebration.celebration_date) === 0
             ? '🎉 Today!'
-            : `${celebration.days_to_event} day(s) away`}
+            : `${computeDaysFromDate(celebration.celebration_date)} day(s) away`}
         </p>
       </div>
 
