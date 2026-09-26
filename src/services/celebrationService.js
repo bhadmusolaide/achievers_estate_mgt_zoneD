@@ -92,8 +92,11 @@ export const celebrationService = {
 
   /**
    * Get all celebrations with filters
+   * Filters out expired pending/approved entries older than 3 days past the event.
    */
   async getAll(filters = {}) {
+    const today = new Date().toISOString().split('T')[0];
+
     let query = supabase
       .from('celebrations_queue')
       .select(`
@@ -128,7 +131,15 @@ export const celebrationService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data;
+
+    // Filter out expired pending/approved/skipped celebrations (older than 3 days past)
+    // But keep sent records for history
+    return (data || []).filter((c) => {
+      if (c.status === 'sent') return true;
+      if (c.status === 'skipped') return false;
+      if (c.days_to_event < -3) return false;
+      return true;
+    });
   },
 
   /**
@@ -508,6 +519,34 @@ export const celebrationService = {
 
     if (error) throw error;
     return data;
+  },
+
+  /**
+   * Auto-skip expired pending/approved celebrations that are more than 3 days past.
+   * Returns the count of skipped records.
+   */
+  async cleanupExpired() {
+    const { data: expired, error: fetchError } = await supabase
+      .from('celebrations_queue')
+      .select('id')
+      .in('status', ['pending', 'approved'])
+      .lt('days_to_event', -3);
+
+    if (fetchError) throw fetchError;
+    if (!expired || expired.length === 0) return 0;
+
+    const ids = expired.map((c) => c.id);
+    const { error: updateError } = await supabase
+      .from('celebrations_queue')
+      .update({
+        status: 'skipped',
+        skipped_at: new Date().toISOString(),
+        skipped_reason: 'Auto-skipped — expired after 3 days past event',
+      })
+      .in('id', ids);
+
+    if (updateError) throw updateError;
+    return ids.length;
   },
 };
 

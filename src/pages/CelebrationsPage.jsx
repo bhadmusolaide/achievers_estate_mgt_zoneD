@@ -1,24 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Cake, Heart, RefreshCw } from 'lucide-react';
 import Header from '../components/layout/Header';
 import CelebrationList from '../components/celebrations/CelebrationList';
 import { celebrationService } from '../services/celebrationService';
+import { celebrationReminderService } from '../services/celebrationReminderService';
+import { useAuth } from '../context/AuthContext';
 
 const CelebrationsPage = () => {
+  const { adminProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('birthday');
   const [celebrations, setCelebrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [counts, setCounts] = useState({ birthdays: 0, anniversaries: 0 });
+  const reminderRef = useRef(false);
 
   useEffect(() => {
     loadCelebrations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // Send reminder once on initial mount
+  useEffect(() => {
+    if (adminProfile?.id && !reminderRef.current) {
+      reminderRef.current = true;
+      celebrationReminderService.sendAdminReminder(adminProfile);
+    }
+  }, [adminProfile]);
+
+  // Expose test helpers in dev mode
+  useEffect(() => {
+    if (import.meta.env.DEV && adminProfile?.id) {
+      window.__testReminder = () =>
+        celebrationReminderService.sendAdminReminder(adminProfile, true);
+      window.__testReminderDryRun = async () => {
+        const celebrations = await celebrationReminderService.getPendingCelebrations();
+        console.log(`[Test] Pending celebrations: ${celebrations.length}`, celebrations);
+        return celebrations;
+      };
+    }
+    return () => {
+      delete window.__testReminder;
+      delete window.__testReminderDryRun;
+    };
+  }, [adminProfile]);
+
   const loadCelebrations = async () => {
     try {
       setLoading(true);
+      // Clean up expired pending/approved celebrations silently
+      await celebrationService.cleanupExpired();
       const [data, todayCounts] = await Promise.all([
         celebrationService.getByType(activeTab),
         celebrationService.getTodayCounts(),
