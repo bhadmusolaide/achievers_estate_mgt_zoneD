@@ -76,7 +76,7 @@ export const transactionService = {
         admin_profiles:created_by (id, full_name, role),
         approver:approved_by (id, full_name, role),
         rejector:rejected_by (id, full_name, role)
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters.transaction_type) {

@@ -1467,6 +1467,152 @@ body {
   gap: 0.25rem;
 }
 
+/* Activity History */
+.profile-activity {
+  background: var(--gray-50);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+}
+
+.profile-activity h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 1rem;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-item {
+  display: flex;
+  gap: 0.75rem;
+  background: var(--surface);
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.activity-icon {
+  width: 40px;
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 1rem;
+  flex-shrink: 0;
+}
+
+.activity-item.payment .activity-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.activity-item.transaction.credit .activity-icon {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.activity-item.transaction.debit .activity-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.activity-body {
+  flex: 1;
+  padding: 0.875rem 1rem 0.875rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.activity-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.activity-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-amount {
+  font-weight: 700;
+  font-size: 0.925rem;
+  color: var(--gray-800);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.amount-sign.credit {
+  color: #059669;
+}
+
+.amount-sign.debit {
+  color: #dc2626;
+}
+
+.activity-description {
+  font-size: 0.8rem;
+  color: var(--gray-600);
+  line-height: 1.4;
+}
+
+.activity-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  flex-wrap: wrap;
+}
+
+.activity-label {
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+}
+
+.activity-item.payment .activity-label {
+  color: #2563eb;
+}
+
+.activity-item.transaction.credit .activity-label {
+  color: #059669;
+}
+
+.activity-item.transaction.debit .activity-label {
+  color: #dc2626;
+}
+
+.activity-separator {
+  color: var(--gray-300);
+}
+
+.activity-ref {
+  font-family: monospace;
+}
+
+.activity-spacer {
+  flex: 1;
+}
+
+.badge-sm {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.45rem;
+}
+
 .payment-info {
   display: flex;
   flex-direction: column;

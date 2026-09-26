@@ -1,8 +1,25 @@
-import { User, Phone, Mail, Home, Calendar, CreditCard } from 'lucide-react';
-import { formatCurrency, formatDate, getStatusClass, formatLandlordName } from '../../utils/helpers';
+import { User, Phone, Mail, Home, Calendar, CreditCard, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
+import { formatCurrency, formatDate, formatDateTime, getStatusClass, formatLandlordName } from '../../utils/helpers';
 
-const LandlordProfile = ({ landlord, paymentSummary }) => {
+const ActivityIcon = ({ item }) => {
+  if (item._type === 'payment') return <Receipt size={18} />;
+  return item.transaction_type === 'credit' ? <TrendingUp size={18} /> : <TrendingDown size={18} />;
+};
+
+const ActivityTitle = ({ item }) => {
+  if (item._type === 'payment') return item.payment_types?.name || 'Payment';
+  return item.transaction_categories?.description || item.transaction_categories?.name || 'Transaction';
+};
+
+const LandlordProfile = ({ landlord, paymentSummary, transactions }) => {
   if (!landlord) return null;
+
+  const mergedActivity = [
+    ...(landlord.payments || []).map(p => ({ ...p, _type: 'payment' })),
+    ...(transactions || [])
+      .filter(tx => !tx.payment_id)
+      .map(tx => ({ ...tx, _type: 'transaction' })),
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   return (
     <div className="profile-view">
@@ -139,8 +156,8 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
             <div className="summary-card">
               <CreditCard size={20} />
               <div>
-                <span className="summary-value">{paymentSummary.paymentCount}</span>
-                <span className="summary-label">Payments Made</span>
+                <span className="summary-value">{mergedActivity.length}</span>
+                <span className="summary-label">Activities</span>
               </div>
             </div>
             <div className="summary-card">
@@ -156,23 +173,45 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
         </div>
       )}
 
-      {landlord.payments && landlord.payments.length > 0 && (
-        <div className="profile-payments">
-          <h3>Payment History</h3>
-          <div className="payment-list">
-            {landlord.payments.map((payment) => (
-              <div key={payment.id} className="payment-item">
-                <div className="payment-info">
-                  <span className="payment-type">
-                    {payment.payment_types?.name || 'Payment'}
-                  </span>
-                  <span className="payment-date">{formatDate(payment.created_at)}</span>
+      {mergedActivity.length > 0 && (
+        <div className="profile-activity">
+          <h3>Activity History</h3>
+          <div className="activity-list">
+            {mergedActivity.map((item) => (
+              <div key={`${item._type}-${item.id}`} className={`activity-item ${item._type} ${item.transaction_type || ''}`}>
+                <div className="activity-icon">
+                  <ActivityIcon item={item} />
                 </div>
-                <div className="payment-amount">
-                  <span className={`badge ${getStatusClass(payment.status)}`}>
-                    {payment.status}
-                  </span>
-                  <span>{formatCurrency(payment.amount)}</span>
+                <div className="activity-body">
+                  <div className="activity-top">
+                    <span className="activity-title"><ActivityTitle item={item} /></span>
+                    <span className="activity-amount">
+                      {item._type === 'transaction' && (
+                        <span className={`amount-sign ${item.transaction_type}`}>
+                          {item.transaction_type === 'credit' ? '+ ' : '- '}
+                        </span>
+                      )}
+                      {formatCurrency(item.amount)}
+                    </span>
+                  </div>
+                  {item._type === 'transaction' && item.description && (
+                    <span className="activity-description">{item.description}</span>
+                  )}
+                  <div className="activity-meta">
+                    <span className="activity-label">{item._type === 'payment' ? 'Payment' : 'Ledger'}</span>
+                    <span className="activity-separator">·</span>
+                    <span className="activity-date">{formatDateTime(item.created_at)}</span>
+                    {item._type === 'transaction' && item.reference && (
+                      <>
+                        <span className="activity-separator">·</span>
+                        <span className="activity-ref">Ref: {item.reference}</span>
+                      </>
+                    )}
+                    <div className="activity-spacer" />
+                    <span className={`badge badge-sm ${getStatusClass(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -184,4 +223,3 @@ const LandlordProfile = ({ landlord, paymentSummary }) => {
 };
 
 export default LandlordProfile;
-

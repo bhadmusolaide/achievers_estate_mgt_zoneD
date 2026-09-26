@@ -129,7 +129,7 @@ export const activityLogService = {
       .select(`
         *,
         admin_profiles:actor_admin_id (id, full_name, role)
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters.adminId) {

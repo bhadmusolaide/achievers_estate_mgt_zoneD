@@ -17,6 +17,7 @@ const LandlordsPage = () => {
   const [modalMode, setModalMode] = useState('add');
   const [selectedLandlord, setSelectedLandlord] = useState(null);
   const [paymentSummary, setPaymentSummary] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [saving, setSaving] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
@@ -53,8 +54,10 @@ const LandlordsPage = () => {
   const handleView = async (landlord) => {
     const full = await landlordService.getById(landlord.id);
     const summary = await landlordService.getPaymentSummary(landlord.id);
+    const txs = await landlordService.getTransactions(landlord.id);
     setSelectedLandlord(full);
     setPaymentSummary(summary);
+    setTransactions(txs);
     setModalMode('view');
     setShowModal(true);
   };
@@ -233,7 +236,7 @@ const LandlordsPage = () => {
       </div>
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={modalMode === 'add' ? 'Add Landlord' : modalMode === 'edit' ? 'Edit Landlord' : 'Landlord Profile'} size="medium">
         {modalMode === 'view' ? (
-          <LandlordProfile landlord={selectedLandlord} paymentSummary={paymentSummary} />
+          <LandlordProfile landlord={selectedLandlord} paymentSummary={paymentSummary} transactions={transactions} />
         ) : (
           <LandlordForm landlord={selectedLandlord} onSubmit={handleSubmit} onCancel={() => setShowModal(false)} loading={saving} />
         )}
