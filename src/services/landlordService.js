@@ -187,6 +187,23 @@ export const landlordService = {
       totalDebt
     };
   },
+
+  /**
+   * Get transaction history for a landlord
+   */
+  async getTransactions(id) {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        transaction_categories (name, description, type)
+      `)
+      .eq('landlord_id', id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
 };
 
 export default landlordService;

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Upload, DollarSign } from 'lucide-react';
+import { Upload, DollarSign, Receipt } from 'lucide-react';
 import BulkImportLandlords from '../components/landlords/BulkImportLandlords';
 import BulkImportFinancials from '../components/financial/BulkImportFinancials';
+import BulkImportTransactions from '../components/transactions/BulkImportTransactions';
 import Header from '../components/layout/Header';
 
 const TABS = [
   { id: 'landlords', label: 'Landlords', icon: Upload },
   { id: 'financials', label: 'Financial Data', icon: DollarSign },
+  { id: 'transactions', label: 'Transactions', icon: Receipt },
 ];
 
 const BulkImportPage = () => {
@@ -50,6 +52,7 @@ const BulkImportPage = () => {
         {/* Tab Content */}
         {activeTab === 'landlords' && <BulkImportLandlords />}
         {activeTab === 'financials' && <BulkImportFinancials />}
+        {activeTab === 'transactions' && <BulkImportTransactions />}
       </div>
     </div>
   );
