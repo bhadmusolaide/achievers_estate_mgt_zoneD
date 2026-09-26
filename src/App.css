@@ -2722,6 +2722,35 @@ body {
     padding: 0.625rem 1rem;
   }
 
+  .zone-card-item-main {
+    min-width: 0;
+    gap: 0.375rem;
+  }
+
+  .zone-card-item-main .badge {
+    flex-shrink: 0;
+  }
+
+  .zone-card-item-detail {
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .zone-item-desc {
+    max-width: 100%;
+  }
+
+  .stats-content {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .stats-value {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
   /* Public zone FAB for mobile */
   .public-zone-page .fab {
     bottom: 1rem;
