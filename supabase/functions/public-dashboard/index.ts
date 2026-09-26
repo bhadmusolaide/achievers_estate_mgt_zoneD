@@ -99,7 +99,9 @@ async function getTotalProjectBudget(supabase) {
   const { data } = await supabase
     .from("projects")
     .select("estimated_budget")
-    .eq("status", "active");
+    .eq("status", "active")
+    .neq("milestone_level", "completed")
+    .neq("milestone_level", "canceled");
 
   if (!data) return 0;
   return data.reduce((sum, p) => sum + Number(p.estimated_budget ?? 0), 0);

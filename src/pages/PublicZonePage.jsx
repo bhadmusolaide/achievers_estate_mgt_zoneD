@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, MessageSquare, Search, Loader2 } from 'lucide-react';
+import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, MessageSquare, Search, Loader2, Info } from 'lucide-react';
 import { publicDashboardService } from '../services/publicDashboardService';
 import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
 import FeedbackModal from '../components/common/FeedbackModal';
@@ -130,11 +130,17 @@ const PublicZonePage = () => {
 
         {/* Stats Cards */}
         <div className="metrics-grid">
-          <div className={`stats-card stats-card-success`}>
+          <div className="stats-card stats-card-success">
             <div className="stats-icon"><Wallet size={24} /></div>
             <div className="stats-content">
               <span className="stats-value">{formatCurrency(data?.account_balance || 0)}</span>
-              <span className="stats-title">Zone Account Balance</span>
+              <span className="stats-title">
+                Zone Account Balance
+                <span className="tooltip-container">
+                  <Info size={14} className="tooltip-icon" />
+                  <span className="tooltip-text">Total funds available in the zone account from member contributions and donations</span>
+                </span>
+              </span>
             </div>
           </div>
           <div className={`stats-card ${(data?.account_balance || 0) - (data?.total_project_budget || 0) < 0 ? 'stats-card-danger' : 'stats-card-info'}`}>
@@ -143,24 +149,42 @@ const PublicZonePage = () => {
               <span className="stats-value">
                 {formatCurrency((data?.account_balance || 0) - (data?.total_project_budget || 0))}
               </span>
-              <span className="stats-title">Potential Balance</span>
+              <span className="stats-title">
+                Available Balance
+                <span className="tooltip-container">
+                  <Info size={14} className="tooltip-icon" />
+                  <span className="tooltip-text">Remaining balance after funding all active projects</span>
+                </span>
+              </span>
               {(data?.account_balance || 0) - (data?.total_project_budget || 0) < 0 && (
                 <span className="stats-trend negative">Project budgets exceed current balance</span>
               )}
             </div>
           </div>
-          <div className={`stats-card stats-card-warning`}>
+          <div className="stats-card stats-card-warning">
             <div className="stats-icon"><AlertCircle size={24} /></div>
             <div className="stats-content">
               <span className="stats-value">{formatCurrency(data?.total_outstanding || 0)}</span>
-              <span className="stats-title">Total Outstanding</span>
+              <span className="stats-title">
+                Total Outstanding
+                <span className="tooltip-container">
+                  <Info size={14} className="tooltip-icon" />
+                  <span className="tooltip-text">Total unpaid dues owed by all landlords</span>
+                </span>
+              </span>
             </div>
           </div>
-          <div className={`stats-card stats-card-danger`}>
+          <div className="stats-card stats-card-danger">
             <div className="stats-icon"><Landmark size={24} /></div>
             <div className="stats-content">
               <span className="stats-value">{formatCurrency(data?.total_debt || 0)}</span>
-              <span className="stats-title">Project Debts</span>
+              <span className="stats-title">
+                Project Debts
+                <span className="tooltip-container">
+                  <Info size={14} className="tooltip-icon" />
+                  <span className="tooltip-text">Money owed to contractors/suppliers from completed projects</span>
+                </span>
+              </span>
             </div>
           </div>
         </div>
