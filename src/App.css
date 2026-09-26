@@ -6769,10 +6769,30 @@ body {
 }
 
 .zone-item-desc {
+  cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+  transition: background 0.15s, padding 0.15s;
+}
+
+.zone-item-desc:hover {
+  white-space: normal;
+  overflow: visible;
+  max-width: none;
+  background: var(--surface-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.zone-item-desc.expanded {
+  white-space: normal;
+  overflow: visible;
+  max-width: none;
+  background: var(--surface-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 
 .zone-item-status {

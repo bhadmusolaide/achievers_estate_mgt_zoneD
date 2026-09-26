@@ -29,6 +29,19 @@ const PublicZonePage = () => {
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
+  const [expandedDesc, setExpandedDesc] = useState(null);
+
+  useEffect(() => {
+    if (!expandedDesc) return;
+    const handleClick = () => setExpandedDesc(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [expandedDesc]);
+
+  const toggleDesc = (e, id) => {
+    e.stopPropagation();
+    setExpandedDesc(prev => prev === id ? null : id);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -213,7 +226,7 @@ const PublicZonePage = () => {
                       </div>
                       <div className="zone-card-item-detail">
                         <span>Budget: {formatCurrency(project.estimated_budget || 0)}</span>
-                        {project.description && <span className="zone-item-desc">{project.description}</span>}
+                        {project.description && <span className={`zone-item-desc${expandedDesc === project.id ? ' expanded' : ''}`} onClick={(e) => toggleDesc(e, project.id)} title={project.description}>{project.description}</span>}
                       </div>
                     </div>
                   ))}
