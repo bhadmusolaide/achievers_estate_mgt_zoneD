@@ -7,6 +7,8 @@ const MAX_METADATA_SIZE = 2048;
 export const ACTION_TYPES = {
   LANDLORD_CREATED: 'landlord_created',
   LANDLORD_UPDATED: 'landlord_updated',
+  LANDLORD_DEACTIVATED: 'landlord_deactivated',
+  LANDLORD_ACTIVATED: 'landlord_activated',
   LANDLORD_CSV_IMPORT: 'landlord_csv_import',
   CHARGE_BULK_CREATED: 'charge_bulk_created',
   PAYMENT_LOGGED: 'payment_logged',

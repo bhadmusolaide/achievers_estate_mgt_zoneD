@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Eye, Edit, UserX, UserCheck } from 'lucide-react';
+import { Plus, Eye, Edit, UserX, UserCheck, AlertTriangle } from 'lucide-react';
 import Header from '../components/layout/Header';
 import DataTable from '../components/common/DataTable';
 import SearchFilter from '../components/common/SearchFilter';
@@ -7,6 +7,7 @@ import Modal from '../components/common/Modal';
 import LandlordForm from '../components/landlords/LandlordForm';
 import LandlordProfile from '../components/landlords/LandlordProfile';
 import { landlordService } from '../services/landlordService';
+import { useAuth } from '../context/AuthContext';
 import { getStatusClass, formatLandlordName } from '../utils/helpers';
 
 const LandlordsPage = () => {
@@ -20,6 +21,8 @@ const LandlordsPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [saving, setSaving] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [confirmAction, setConfirmAction] = useState(null);
+  const { adminProfile } = useAuth();
 
   useEffect(() => {
     loadLandlords();
@@ -72,13 +75,31 @@ const LandlordsPage = () => {
   const handleToggleStatus = async (landlord) => {
     try {
       if (landlord.status === 'active') {
-        await landlordService.deactivate(landlord.id);
+        // Show confirmation before deactivating
+        setConfirmAction({
+          landlord,
+          type: 'deactivate',
+          message: `Are you sure you want to deactivate ${formatLandlordName(landlord)}? Their financial records will be archived and they will no longer be able to make payments.`,
+        });
       } else {
-        await landlordService.activate(landlord.id);
+        await landlordService.activate(landlord.id, adminProfile?.id);
+        loadLandlords();
       }
-      loadLandlords();
     } catch (error) {
       console.error('Error toggling status:', error);
+    }
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!confirmAction) return;
+    try {
+      if (confirmAction.type === 'deactivate') {
+        await landlordService.deactivate(confirmAction.landlord.id, adminProfile?.id);
+      }
+      setConfirmAction(null);
+      loadLandlords();
+    } catch (error) {
+      console.error('Error confirming status change:', error);
     }
   };
 
@@ -240,6 +261,29 @@ const LandlordsPage = () => {
         ) : (
           <LandlordForm landlord={selectedLandlord} onSubmit={handleSubmit} onCancel={() => setShowModal(false)} loading={saving} />
         )}
+      </Modal>
+
+      {/* Deactivation confirmation modal */}
+      <Modal
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        title="Confirm Deactivation"
+        size="small"
+      >
+        <div className="confirm-dialog">
+          <div className="confirm-icon">
+            <AlertTriangle size={40} />
+          </div>
+          <p>{confirmAction?.message}</p>
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={() => setConfirmAction(null)}>
+              Cancel
+            </button>
+            <button className="btn btn-danger" onClick={handleConfirmToggle}>
+              Deactivate
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

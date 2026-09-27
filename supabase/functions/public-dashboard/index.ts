@@ -59,8 +59,9 @@ serve(async (req) => {
 async function getTotalOutstanding(supabase) {
   const { data: expected } = await supabase
     .from("landlord_payment_types")
-    .select("landlord_id, amount")
-    .eq("active", true);
+    .select("landlord_id, amount, landlords!inner(status)")
+    .eq("active", true)
+    .eq("landlords.status", "active");
 
   if (!expected || expected.length === 0) return 0;
 
@@ -132,9 +133,10 @@ async function getRecentPayments(supabase) {
     .from("payments")
     .select(`
       id, amount, status, created_at,
-      landlords!inner(title, full_name, house_number, lane_number, road),
+      landlords!inner(title, full_name, house_number, lane_number, road, status),
       payment_types!inner(name)
     `)
+    .eq("landlords.status", "active")
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -184,8 +186,9 @@ async function getPledges(supabase) {
 async function getTopDebtors(supabase) {
   const { data: expected } = await supabase
     .from("landlord_payment_types")
-    .select("landlord_id, amount")
-    .eq("active", true);
+    .select("landlord_id, amount, landlords!inner(status)")
+    .eq("active", true)
+    .eq("landlords.status", "active");
 
   if (!expected || expected.length === 0) return [];
 
