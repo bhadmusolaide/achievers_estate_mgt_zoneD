@@ -72,11 +72,18 @@ export const paymentService = {
   async checkLandlordEligibility(landlordId) {
     const { data, error } = await supabase
       .from('landlords')
-      .select('id, full_name, onboarding_status, onboarding_tasks (completed)')
+      .select('id, full_name, status, onboarding_status, onboarding_tasks (completed)')
       .eq('id', landlordId)
       .single();
 
     if (error) throw error;
+
+    // Reject payments for deactivated landlords
+    if (data.status === 'inactive') {
+      throw new Error(
+        `Cannot record payment for ${data.full_name}. This landlord is deactivated.`
+      );
+    }
 
     if (data.onboarding_status !== 'pending') {
       return true;

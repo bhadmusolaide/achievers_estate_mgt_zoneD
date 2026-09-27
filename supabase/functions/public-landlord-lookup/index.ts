@@ -66,6 +66,13 @@ serve(async (req) => {
       });
     }
 
+    if (landlord.status === "inactive") {
+      return new Response(JSON.stringify({ error: "No landlord found with that phone number" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: expectedPayments } = await supabase
       .from("landlord_payment_types")
       .select("amount")

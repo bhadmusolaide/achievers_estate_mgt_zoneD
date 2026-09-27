@@ -141,17 +141,59 @@ export const landlordService = {
   },
 
   /**
-   * Deactivate a landlord
+   * Deactivate a landlord (archives them — all FK-linked records stay in place)
    */
-  async deactivate(id) {
-    return this.update(id, { status: 'inactive' });
+  async deactivate(id, adminId) {
+    const updates = {
+      status: 'inactive',
+      deactivated_at: new Date().toISOString(),
+      deactivated_by: adminId,
+    };
+
+    const data = await this.update(id, updates, adminId);
+
+    // Log the deactivation
+    if (adminId) {
+      await activityLogService.log({
+        adminId,
+        actionType: ACTION_TYPES.LANDLORD_DEACTIVATED,
+        entityType: ENTITY_TYPES.LANDLORD,
+        entityId: data.id,
+        metadata: {
+          full_name: data.full_name,
+        },
+      });
+    }
+
+    return data;
   },
 
   /**
-   * Activate a landlord
+   * Activate a landlord (restores them — all data was preserved)
    */
-  async activate(id) {
-    return this.update(id, { status: 'active' });
+  async activate(id, adminId) {
+    const updates = {
+      status: 'active',
+      deactivated_at: null,
+      deactivated_by: null,
+    };
+
+    const data = await this.update(id, updates, adminId);
+
+    // Log the activation
+    if (adminId) {
+      await activityLogService.log({
+        adminId,
+        actionType: ACTION_TYPES.LANDLORD_ACTIVATED,
+        entityType: ENTITY_TYPES.LANDLORD,
+        entityId: data.id,
+        metadata: {
+          full_name: data.full_name,
+        },
+      });
+    }
+
+    return data;
   },
 
   /**
