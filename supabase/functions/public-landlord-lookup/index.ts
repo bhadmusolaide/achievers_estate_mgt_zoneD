@@ -28,6 +28,31 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Rate limiting: 10 lookups per IP per 5 minutes
+    const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim()
+      || req.headers.get("x-real-ip") || "unknown";
+    const key = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + ":landlord-lookup"))
+      .then((h) => Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, "0")).join(""));
+    const cutoff = new Date(Date.now() - 300000).toISOString();
+    await supabase.from("rate_limits").delete().lt("window_start", cutoff);
+    const { data: entry } = await supabase
+      .from("rate_limits")
+      .select("id, count")
+      .eq("key", key)
+      .eq("endpoint", "landlord-lookup")
+      .gte("window_start", cutoff)
+      .maybeSingle();
+    if (entry && entry.count >= 10) {
+      return new Response(JSON.stringify({ error: "Too many requests. Try again later." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (entry) {
+      await supabase.from("rate_limits").update({ count: entry.count + 1 }).eq("id", entry.id);
+    } else {
+      await supabase.from("rate_limits").insert({ key, endpoint: "landlord-lookup", count: 1, window_start: new Date().toISOString() });
+    }
+
     const { phone } = await req.json();
 
     if (!phone) {

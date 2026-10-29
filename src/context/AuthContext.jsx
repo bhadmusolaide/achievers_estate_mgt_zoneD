@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
+const SESSION_MAX_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 const AuthContext = createContext({});
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -26,6 +28,16 @@ export const AuthProvider = ({ children }) => {
         console.log('Auth state changed:', event, session?.user?.email);
 
         setTimeout(async () => {
+          // Enforce 24-hour session max
+          if (session?.user && isSessionExpired(session)) {
+            await supabase.auth.signOut();
+            setUser(null);
+            setAdminProfile(null);
+            setLoading(false);
+            initialLoadDone.current = true;
+            return;
+          }
+
           // Handle initial session load
           if (event === 'INITIAL_SESSION') {
             if (session?.user) {
@@ -52,6 +64,14 @@ export const AuthProvider = ({ children }) => {
             setProfileError(null);
             setLoading(false);
           } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+              // Enforce 24-hour session max on refresh as well
+              if (session?.user && isSessionExpired(session)) {
+                await supabase.auth.signOut();
+                setUser(null);
+                setAdminProfile(null);
+                setLoading(false);
+                return;
+              }
             setUser(session?.user ?? null);
             if (session?.user) {
               try {
@@ -86,6 +106,12 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+
+  const isSessionExpired = (session) => {
+    if (!session?.created_at) return false;
+    const elapsed = Date.now() - new Date(session.created_at).getTime();
+    return elapsed > SESSION_MAX_MS;
+  };
 
   const fetchAdminProfile = async (userId, isInitialLoad = false) => {
     try {
