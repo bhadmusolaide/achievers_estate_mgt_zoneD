@@ -88,6 +88,15 @@ serve(async (req) => {
       })
     }
 
+    // Verify the user's role has bulk_import permission
+    const { data: hasBulkImport, error: featureError } = await supabaseClient.rpc('has_feature', { p_feature: 'bulk_import' })
+    if (featureError || !hasBulkImport) {
+      return new Response(JSON.stringify({ error: 'Your role does not have bulk import permission' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const { landlords }: { landlords: LandlordData[] } = await req.json()
 
     if (!landlords || !Array.isArray(landlords)) {

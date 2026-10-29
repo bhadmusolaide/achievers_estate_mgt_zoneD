@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Wallet, AlertCircle, TrendingDown, Landmark, Building2, CreditCard, Heart, Users, RefreshCw, MessageSquare, Search, Loader2, Info } from 'lucide-react';
 import { publicDashboardService } from '../services/publicDashboardService';
-import { formatCurrency, formatDateTime, formatLandlordName } from '../utils/helpers';
+import { formatCurrency, formatDateTime } from '../utils/helpers';
 import FeedbackModal from '../components/common/FeedbackModal';
 import Modal from '../components/common/Modal';
 
@@ -226,6 +226,7 @@ const PublicZonePage = () => {
                       </div>
                       <div className="zone-card-item-detail">
                         <span>Budget: {formatCurrency(project.estimated_budget || 0)}</span>
+                        <span>{formatDateTime(project.created_at)}</span>
                         {project.description && <span className={`zone-item-desc${expandedDesc === project.id ? ' expanded' : ''}`} onClick={(e) => toggleDesc(e, project.id)} title={project.description}>{project.description}</span>}
                       </div>
                     </div>
@@ -250,9 +251,6 @@ const PublicZonePage = () => {
                   {data.recent_payments.map(payment => (
                     <div key={payment.id} className="zone-card-item">
                       <div className="zone-card-item-main">
-                        <span className="zone-item-name">
-                          {formatLandlordName(payment.landlord)}
-                        </span>
                         <span className="zone-item-amount">{formatCurrency(payment.amount)}</span>
                       </div>
                       <div className="zone-card-item-detail">
@@ -288,6 +286,7 @@ const PublicZonePage = () => {
                         <span className={`badge ${PLEDGE_STATUS_COLORS[pledge.status] || 'badge-default'}`}>
                           {pledge.status.charAt(0).toUpperCase() + pledge.status.slice(1)}
                         </span>
+                        <span>{formatDateTime(pledge.created_at)}</span>
                         {pledge.description && <span className="zone-item-desc">{pledge.description}</span>}
                       </div>
                     </div>
@@ -313,7 +312,7 @@ const PublicZonePage = () => {
                     <div key={debtor.id} className="zone-card-item">
                       <div className="zone-card-item-main">
                         <span className="zone-item-rank">#{index + 1}</span>
-                        <span className="zone-item-name">{formatLandlordName(debtor)}</span>
+                        <span className="zone-item-name">Landlord {index + 1}</span>
                         <span className="zone-item-amount zone-item-debt">
                           {formatCurrency(debtor.outstanding)}
                         </span>

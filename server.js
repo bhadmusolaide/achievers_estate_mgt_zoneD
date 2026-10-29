@@ -13,6 +13,29 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  // Content-Security-Policy (adjust as needed for your external resources)
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://bqfekjtdajpnakwuubdu.supabase.co; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: blob:; " +
+    "connect-src 'self' https://bqfekjtdajpnakwuubdu.supabase.co https://api.emailjs.com wss://bqfekjtdajpnakwuubdu.supabase.co; " +
+    "font-src 'self' data:; " +
+    "object-src 'none'; " +
+    "frame-ancestors 'none'; " +
+    "base-uri 'self'"
+  );
+  next();
+});
+
 // Serve static files from the dist directory
 app.use(express.static(join(__dirname, 'dist')));
 
