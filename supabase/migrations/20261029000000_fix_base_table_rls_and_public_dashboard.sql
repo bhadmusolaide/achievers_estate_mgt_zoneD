@@ -90,6 +90,7 @@ CREATE POLICY "Admins can delete receipts" ON receipts
 -- ===========================================================================
 -- 5. Revoke public access to get_public_dashboard_data() — no PII leak
 -- ===========================================================================
+REVOKE EXECUTE ON FUNCTION get_public_dashboard_data() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION get_public_dashboard_data() FROM anon;
 GRANT  EXECUTE ON FUNCTION get_public_dashboard_data() TO authenticated;
 

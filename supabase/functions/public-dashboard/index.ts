@@ -147,6 +147,13 @@ async function getRecentPayments(supabase) {
     amount: p.amount,
     status: p.status,
     created_at: p.created_at,
+    landlord: {
+      title: p.landlords?.title,
+      full_name: p.landlords?.full_name,
+      house_number: p.landlords?.house_number,
+      lane_number: p.landlords?.lane_number,
+      road: p.landlords?.road,
+    },
     payment_type: { name: p.payment_types?.name },
   }));
 }
@@ -155,14 +162,25 @@ async function getPledges(supabase) {
   const { data } = await supabase
     .from("pledges")
     .select(`
-      id, donor_name, amount, description, status, created_at
+      id, donor_name, amount, description, status, created_at, landlord_id,
+      landlords!left(title, full_name)
     `)
     .order("created_at", { ascending: false })
     .limit(10);
 
   if (!data) return [];
 
-  return data;
+  return data.map((pl) => ({
+    id: pl.id,
+    donor_name: pl.donor_name,
+    amount: pl.amount,
+    description: pl.description,
+    status: pl.status,
+    created_at: pl.created_at,
+    landlord: pl.landlords
+      ? { title: pl.landlords.title, full_name: pl.landlords.full_name }
+      : null,
+  }));
 }
 
 async function getTopDebtors(supabase) {
@@ -205,8 +223,25 @@ async function getTopDebtors(supabase) {
   debtors.sort((a, b) => b.outstanding - a.outstanding);
   const top10 = debtors.slice(0, 10);
 
-  return top10.map((d, idx) => ({
+  if (top10.length === 0) return [];
+
+  const { data: landlords } = await supabase
+    .from("landlords")
+    .select("id, title, full_name")
+    .eq("status", "active")
+    .in("id", top10.map((d) => d.landlord_id));
+
+  const landlordMap = {};
+  if (landlords) {
+    for (const l of landlords) {
+      landlordMap[l.id] = l;
+    }
+  }
+
+  return top10.map((d) => ({
     id: d.landlord_id,
+    title: landlordMap[d.landlord_id]?.title,
+    full_name: landlordMap[d.landlord_id]?.full_name,
     outstanding: d.outstanding,
   }));
 }
