@@ -1,0 +1,293 @@
+import { useState, useEffect } from 'react';
+import { Plus, Eye, Edit, UserX, UserCheck, AlertTriangle } from 'lucide-react';
+import Header from '../components/layout/Header';
+import DataTable from '../components/common/DataTable';
+import SearchFilter from '../components/common/SearchFilter';
+import Modal from '../components/common/Modal';
+import LandlordForm from '../components/landlords/LandlordForm';
+import LandlordProfile from '../components/landlords/LandlordProfile';
+import { landlordService } from '../services/landlordService';
+import { useAuth } from '../context/AuthContext';
+import { getStatusClass, formatLandlordName } from '../utils/helpers';
+
+const LandlordsPage = () => {
+  const [landlords, setLandlords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState('add');
+  const [selectedLandlord, setSelectedLandlord] = useState(null);
+  const [paymentSummary, setPaymentSummary] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [confirmAction, setConfirmAction] = useState(null);
+  const { adminProfile } = useAuth();
+
+  useEffect(() => {
+    loadLandlords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sortConfig]);
+
+  const loadLandlords = async () => {
+    try {
+      const data = await landlordService.getAll(filters, sortConfig);
+      setLandlords(data);
+    } catch (error) {
+      console.error('Error loading landlords:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (search) => {
+    setFilters(prev => ({ ...prev, search }));
+  };
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const handleAdd = () => {
+    setSelectedLandlord(null);
+    setModalMode('add');
+    setShowModal(true);
+  };
+
+  const handleView = async (landlord) => {
+    const full = await landlordService.getById(landlord.id);
+    const summary = await landlordService.getPaymentSummary(landlord.id);
+    const txs = await landlordService.getTransactions(landlord.id);
+    setSelectedLandlord(full);
+    setPaymentSummary(summary);
+    setTransactions(txs);
+    setModalMode('view');
+    setShowModal(true);
+  };
+
+  const handleEdit = async (landlord) => {
+    const full = await landlordService.getById(landlord.id);
+    setSelectedLandlord(full);
+    setModalMode('edit');
+    setShowModal(true);
+  };
+
+  const handleToggleStatus = async (landlord) => {
+    try {
+      if (landlord.status === 'active') {
+        // Show confirmation before deactivating
+        setConfirmAction({
+          landlord,
+          type: 'deactivate',
+          message: `Are you sure you want to deactivate ${formatLandlordName(landlord)}? Their financial records will be archived and they will no longer be able to make payments.`,
+        });
+      } else {
+        await landlordService.activate(landlord.id, adminProfile?.id);
+        loadLandlords();
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!confirmAction) return;
+    try {
+      if (confirmAction.type === 'deactivate') {
+        await landlordService.deactivate(confirmAction.landlord.id, adminProfile?.id);
+      }
+      setConfirmAction(null);
+      loadLandlords();
+    } catch (error) {
+      console.error('Error confirming status change:', error);
+    }
+  };
+
+  const handleSubmit = async (formData) => {
+    setSaving(true);
+    try {
+      if (modalMode === 'add') {
+        await landlordService.create(formData);
+      } else {
+        await landlordService.update(selectedLandlord.id, formData);
+      }
+      setShowModal(false);
+      loadLandlords();
+    } catch (error) {
+      console.error('Error saving landlord:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const columns = [
+    {
+      key: 'full_name',
+      header: 'Name',
+      sortable: true,
+      render: (row) => formatLandlordName(row)
+    },
+    { key: 'email', header: 'Email', sortable: true },
+    { key: 'phone', header: 'Phone', sortable: true },
+    { key: 'house_number', header: 'House #', sortable: true },
+    { key: 'lane_number', header: 'Lane', sortable: true },
+    { key: 'road', header: 'Road', sortable: true },
+    { key: 'occupation', header: 'Occupation', sortable: true },
+    {
+      key: 'notes',
+      header: 'Notes',
+      sortable: false,
+      render: (row) => row.notes ? (
+        <span className="notes-cell" title={row.notes}>
+          {row.notes.length > 50 ? row.notes.substring(0, 50) + '...' : row.notes}
+        </span>
+      ) : '-'
+    },
+    {
+      key: 'occupancy_type',
+      header: 'Type',
+      sortable: true,
+      render: (row) => <span className="capitalize">{row.occupancy_type}</span>
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      render: (row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span className={`badge ${getStatusClass(row.status)}`}>
+            {row.status}
+          </span>
+          {row.onboarding_status === 'pending' && (
+            <span className="badge badge-warning" title="Onboarding pending - cannot process payments">
+              Pending Onboarding
+            </span>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (row) => (
+        <div className="table-actions">
+          <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleView(row); }} title="View">
+            <Eye size={16} />
+          </button>
+          <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleEdit(row); }} title="Edit">
+            <Edit size={16} />
+          </button>
+          <button
+            className="btn-icon"
+            onClick={(e) => { e.stopPropagation(); handleToggleStatus(row); }}
+            title={row.status === 'active' ? 'Deactivate' : 'Activate'}
+          >
+            {row.status === 'active' ? <UserX size={16} /> : <UserCheck size={16} />}
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  const filterOptions = [
+    {
+      key: 'status',
+      label: 'Status',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+      ]
+    },
+    {
+      key: 'onboarding_status',
+      label: 'Onboarding',
+      options: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'active', label: 'Completed' },
+      ]
+    },
+    {
+      key: 'occupancy_type',
+      label: 'Occupancy',
+      options: [
+        { value: 'owner', label: 'Owner' },
+        { value: 'tenant', label: 'Tenant' },
+      ]
+    },
+    {
+      key: 'road',
+      label: 'Road',
+      type: 'text',
+      placeholder: 'e.g., Road 1'
+    }
+  ];
+
+  return (
+    <div className="page landlords-page">
+      <Header title="Landlords" />
+      <div className="page-content">
+        <div className="page-header">
+          <SearchFilter
+            searchPlaceholder="Search landlords..."
+            onSearch={handleSearch}
+            filters={filterOptions}
+            onFilterChange={handleFilterChange}
+            activeFilters={filters}
+          />
+          <button className="btn btn-primary" onClick={handleAdd}>
+            <Plus size={18} /> Add Landlord
+          </button>
+        </div>
+        <DataTable
+          columns={columns}
+          data={landlords}
+          loading={loading}
+          emptyMessage="No landlords found"
+          sortConfig={sortConfig}
+          onSort={(key) => {
+            let direction = 'asc';
+            if (sortConfig.key === key) {
+              direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            }
+            setSortConfig({ key, direction });
+          }}
+          customizable
+          tableId="landlords"
+        />
+      </div>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={modalMode === 'add' ? 'Add Landlord' : modalMode === 'edit' ? 'Edit Landlord' : 'Landlord Profile'} size="medium">
+        {modalMode === 'view' ? (
+          <LandlordProfile landlord={selectedLandlord} paymentSummary={paymentSummary} transactions={transactions} />
+        ) : (
+          <LandlordForm landlord={selectedLandlord} onSubmit={handleSubmit} onCancel={() => setShowModal(false)} loading={saving} />
+        )}
+      </Modal>
+
+      {/* Deactivation confirmation modal */}
+      <Modal
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        title="Confirm Deactivation"
+        size="small"
+      >
+        <div className="confirm-dialog">
+          <div className="confirm-icon">
+            <AlertTriangle size={40} />
+          </div>
+          <p>{confirmAction?.message}</p>
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={() => setConfirmAction(null)}>
+              Cancel
+            </button>
+            <button className="btn btn-danger" onClick={handleConfirmToggle}>
+              Deactivate
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+export default LandlordsPage;
+

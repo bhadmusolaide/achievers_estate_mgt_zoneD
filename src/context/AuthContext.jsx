@@ -1,0 +1,238 @@
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { supabase } from '../lib/supabase';
+
+const SESSION_MAX_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const AuthContext = createContext({});
+
+export const useAuth = () => useContext(AuthContext);
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [adminProfile, setAdminProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(null);
+  const initialLoadDone = useRef(false);
+
+  useEffect(() => {
+    // Listen for auth changes - this handles both initial session and subsequent changes.
+    // IMPORTANT: This callback must stay synchronous and must not await Supabase calls
+    // directly. It runs inside the auth client's exclusive (Navigator LockManager) lock,
+    // and awaiting another Supabase call here deadlocks every subsequent query - making
+    // pages hang on loading until the 10s lock timeout. We defer all work (including the
+    // profile fetch) with setTimeout so the lock is released first. setTimeout callbacks
+    // run in FIFO order, so event ordering and the initialLoadDone flag are preserved.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setTimeout(async () => {
+          // Enforce 24-hour session max
+          if (session?.user && isSessionExpired(session)) {
+            await supabase.auth.signOut();
+            setUser(null);
+            setAdminProfile(null);
+            setLoading(false);
+            initialLoadDone.current = true;
+            return;
+          }
+
+          // Handle initial session load
+          if (event === 'INITIAL_SESSION') {
+            if (session?.user) {
+              setUser(session.user);
+              await fetchAdminProfile(session.user.id, true);
+            } else {
+              setUser(null);
+              setAdminProfile(null);
+              setLoading(false);
+            }
+            initialLoadDone.current = true;
+            return;
+          }
+
+          // Skip if initial load hasn't happened yet (prevents race conditions)
+          if (!initialLoadDone.current) {
+            return;
+          }
+
+          if (event === 'SIGNED_OUT' || event === 'TOKEN_INVALIDATED' || !session) {
+            // Clear all auth state
+            setUser(null);
+            setAdminProfile(null);
+            setProfileError(null);
+            setLoading(false);
+          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+              // Enforce 24-hour session max on refresh as well
+              if (session?.user && isSessionExpired(session)) {
+                await supabase.auth.signOut();
+                setUser(null);
+                setAdminProfile(null);
+                setLoading(false);
+                return;
+              }
+            setUser(session?.user ?? null);
+            if (session?.user) {
+              try {
+                await fetchAdminProfile(session.user.id, false);
+              } catch (error) {
+                console.error('Error fetching profile after auth change:', error);
+                setProfileError('Failed to load user profile. Please log in again.');
+              } finally {
+                // Always set loading to false after sign-in completes
+                setLoading(false);
+              }
+            } else {
+              setLoading(false);
+            }
+          }
+        }, 0);
+      }
+    );
+
+    // Fallback timeout to prevent infinite loading (Chrome issue workaround)
+    const timeoutId = setTimeout(() => {
+      if (!initialLoadDone.current) {
+        console.warn('Auth initialization timed out, forcing completion');
+        initialLoadDone.current = true;
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+
+  const isSessionExpired = (session) => {
+    if (!session?.created_at) return false;
+    const elapsed = Date.now() - new Date(session.created_at).getTime();
+    return elapsed > SESSION_MAX_MS;
+  };
+
+  const fetchAdminProfile = async (userId, isInitialLoad = false) => {
+    try {
+      setProfileError(null);
+
+      // Fetch admin profile with Supabase's built-in timeout handling
+      const { data, error } = await supabase
+        .from('admin_profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle instead of single to avoid error on no rows
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        setProfileError(error.message || 'Failed to fetch profile');
+        setAdminProfile(null);
+      } else if (!data) {
+        setProfileError('No admin profile found. Please contact your administrator to set up your profile.');
+        setAdminProfile(null);
+      } else {
+        setAdminProfile(data);
+        setProfileError(null);
+      }
+    } catch (err) {
+      console.error('Profile fetch failed:', err);
+      // Check if it's a timeout error
+      if (err.name === 'AbortError' || err.message.includes('timeout')) {
+        setProfileError('Query timeout: Request took too long');
+      } else {
+        setProfileError(err.message || 'Failed to fetch profile');
+      }
+      setAdminProfile(null);
+    } finally {
+      // Always set loading to false on initial load
+      if (isInitialLoad) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const signIn = async (email, password) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Sign in failed:', error);
+      setLoading(false);
+      throw error;
+    }
+  };
+
+
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setUser(null);
+    setAdminProfile(null);
+    setProfileError(null);
+    setLoading(false);
+  };
+
+  // Function to refresh the session
+  const refreshSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('Session refresh error:', error);
+        // If refresh fails, user should be logged out
+        signOut();
+        return null;
+      }
+      return session;
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      return null;
+    }
+  };
+
+  // Function to check session validity and refresh if needed
+  const checkAndRefreshSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const expiresAt = session.expires_at;
+        
+        // If session expires in less than 5 minutes, refresh it
+        if (expiresAt && (expiresAt - currentTime) < 300) { // 5 minutes = 300 seconds
+          return await refreshSession();
+        }
+        return session;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error checking session:', error);
+      return null;
+    }
+  };
+
+
+
+  const value = {
+    user,
+    adminProfile,
+    loading,
+    profileError,
+    signIn,
+    signOut,
+    refreshSession,
+    checkAndRefreshSession,
+    isAuthenticated: !!user && !!adminProfile,
+    hasUser: !!user,
+    isChairman: adminProfile?.role === 'chairman',
+  };
+
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export default AuthContext;
+

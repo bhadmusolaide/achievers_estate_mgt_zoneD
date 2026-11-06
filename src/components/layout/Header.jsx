@@ -1,0 +1,48 @@
+import { Bell, Info, Menu, Moon, Sun } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+const Header = ({ title }) => {
+  const navigate = useNavigate();
+  const { adminProfile } = useAuth();
+  const { toggleSidebar, theme, toggleTheme } = useOutletContext() || {};
+
+  return (
+    <header className="main-header">
+      <div className="header-left">
+        <button className="menu-toggle" onClick={toggleSidebar}>
+          <Menu size={24} />
+        </button>
+        <h1 className="page-title">{title}</h1>
+      </div>
+
+      <div className="header-right">
+        <button
+          className="header-btn-public"
+          type="button"
+          onClick={() => navigate('/zone-info')}
+          title="Public Dashboard"
+        >
+          <Info size={16} /> Public Dashboard
+        </button>
+        <button
+          className="btn-icon"
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+        <button className="btn-icon" title="Notifications">
+          <Bell size={20} />
+        </button>
+        <div className="header-user">
+          <span className="header-user-name">{adminProfile?.full_name}</span>
+          <span className="badge">{adminProfile?.zone}</span>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;

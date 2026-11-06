@@ -1,0 +1,55 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment files — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Documentation — only the root README is tracked
+*.md
+!/README.md
+
+# Database migrations are kept local and are not version-controlled
+/supabase/migrations/
+
+# Supabase CLI local state (contains linked project metadata)
+/supabase/.temp/
+
+# Local agent tooling and stale function artifacts
+/.kilo/
+/functions/
+
+# Secret-bearing file formats
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*.json
+secrets*.json
+.npmrc
+.netrc
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
